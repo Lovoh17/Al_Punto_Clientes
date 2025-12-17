@@ -274,7 +274,7 @@ const PerfilPage = () => {
       // Llamar al endpoint para cambiar contraseña
       // NOTA: Asumo que tu API tiene un endpoint para esto
       // Si no lo tienes, necesitarías agregarlo
-      const response = await fetch('http://localhost:3000/api/usuarios/cambiar-password', {
+      const response = await fetch('https://backend-al-punto-1.onrender.com/api/usuarios/cambiar-password', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

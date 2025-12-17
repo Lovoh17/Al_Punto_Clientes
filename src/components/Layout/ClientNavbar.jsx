@@ -10,6 +10,7 @@ const LightNavbar = () => {
 
   const navItems = [
     { path: '/cliente/menu', label: 'Menu' },
+    { path: '/Carrito', label: 'Carrito' },
     { path: '/Mis-Pedidos', label: 'Mis Pedidos' },
     { path: '/Perfil', label: 'Perfil' }
   ];

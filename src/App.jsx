@@ -6,6 +6,7 @@ import { useAuth } from './AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import Layout from './components/Layout/Layout';
 import MenuPage from './pages/Cliente/MenuPage';
+import CarritoPage from './pages/Cliente/CarritoPage';
 import Login from './components/Login';
 import MisPedidosPage from './pages/Cliente/MisPedidosPage';
 import PerfilPage from './pages/Cliente/PerfilPage';
@@ -56,6 +57,7 @@ function App() {
               <Route path="/cliente/menu" element={<MenuPage />} />
               <Route path="/Mis-Pedidos" element={<MisPedidosPage />} />
               <Route path="/Perfil" element={<PerfilPage />} />
+              <Route path="/Carrito" element={<CarritoPage />} />
             </Route>
           </Route>
 
