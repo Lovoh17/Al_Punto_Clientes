@@ -274,7 +274,7 @@ const PerfilPage = () => {
       // Llamar al endpoint para cambiar contraseña
       // NOTA: Asumo que tu API tiene un endpoint para esto
       // Si no lo tienes, necesitarías agregarlo
-      const response = await fetch('http://backend-alpunto-production.up.railway.app/api/usuarios/cambiar-password', {
+      const response = await fetch('https://backend-alpunto-production.up.railway.app/api/usuarios/cambiar-password', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
