@@ -44,7 +44,13 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          
+          <Route path="/" element={<RootRedirect />} />
+
+          {/* 🔓 Ruta pública - Login */}
+          <Route path="/login" element={<Login />} />
+
+          {/* 🔐 Rutas protegidas con Layout */}
+          <Route element={<PrivateRoute />}>
             <Route element={<Layout />}>
               {/* Rutas de Cliente */}
               <Route path="/cliente/menu" element={<MenuPage />} />
@@ -52,7 +58,7 @@ function App() {
               <Route path="/Perfil" element={<PerfilPage />} />
               <Route path="/Carrito" element={<CarritoPage />} />
             </Route>
-          
+          </Route>
 
           {/* 🚫 Página no autorizada */}
           <Route 
