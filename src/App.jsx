@@ -1,6 +1,7 @@
 // src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './AuthContext';
 import { useAuth } from './AuthContext';
 import PrivateRoute from './components/PrivateRoute';
@@ -43,6 +44,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <Analytics />
         <Routes>
           <Route path="/" element={<RootRedirect />} />
 
