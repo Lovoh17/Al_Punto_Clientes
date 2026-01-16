@@ -185,7 +185,7 @@ const puntosEntrega = [
     )
   ];
 
-  return {
+  /*return {
     categorias: categoriasPrincipales,
     productos: productosFiltrados,
     loading,
@@ -196,5 +196,20 @@ const puntosEntrega = [
     refetch: cargarDatos,
     user,
     puntosEntrega // ✅ EXPORTAR PUNTOS DE ENTREGA
+
+    
+  };*/
+
+  return {
+    categorias: categoriasPrincipales,
+    productos: productosFiltrados,
+    loading,
+    error,
+    categoriaActiva,
+    setCategoriaActiva,
+    realizarPedido,
+    refetch: cargarDatos,
+    user,
+    puntosEntrega
   };
 };

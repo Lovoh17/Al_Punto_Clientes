@@ -94,8 +94,24 @@ export const pedidosProductosService = {
 // Servicio de Usuarios
 export const usuarioService = {
   login: (credenciales) => api.post('/usuarios/login', credenciales),
-  registro: (usuario) => api.post('/usuarios/registro', usuario),
   getPerfil: () => api.get('/usuarios/perfil'),
+  syncFirebaseUser: async (userData) => {
+    return await api.post('/usuarios/sync-firebase', userData);
+  },
+  
+  registro: async (userData) => {
+    const dataToSend = userData.provider === 'google.com' ? {
+      email: userData.email,
+      nombre: userData.nombre,
+      foto: userData.foto,
+      uid: userData.uid,
+      provider: userData.provider,
+      password: 'google-auth', 
+      firebaseToken: userData.firebaseToken
+    } : userData;
+    
+    return await api.post('/usuarios/registro', dataToSend);
+  },
 };
 
 // 🎯 Servicios para el cliente (ACTUALIZADO)
@@ -110,11 +126,9 @@ export const clienteService = {
   getProductosPorCategoria: (categoriaId) => 
     api.get(`/productos?categoria_id=${categoriaId}&disponible=true`),
   
-  // Obtener todos los productos disponibles
   getProductosDisponibles: () => 
     api.get('/productos?disponible=true'),
   
-  // 🚀 Crear pedido completo (RECOMENDADO)
   crearPedidoCompleto: (datosCarrito) => {
     return api.post('/Pedidos', {
       usuario_id: datosCarrito.usuario_id,
@@ -131,42 +145,18 @@ export const clienteService = {
   },
 };
 
-// En src/services/api.js, agrega estos servicios:
 export const menuDiasService = {
-  // Obtener todos los menús
   getAll: () => api.get('/Menu_Dias'),
-  
-  // Obtener menú de hoy
   getHoy: () => api.get('/Menu_Dias/hoy'),
-  
-  // Obtener menús próximos
   getProximos: () => api.get('/Menu_Dias/proximos'),
-  
-  // Obtener por ID
   getById: (id) => api.get(`/Menu_Dias/${id}`),
-  
-  // Obtener por fecha
   getByFecha: (fecha) => api.get(`/Menu_Dias/fecha/${fecha}`),
-  
-  // Obtener productos de un menú
   getProductos: (menuId) => api.get(`/Menu_Dias/${menuId}/productos`),
-  
-  // Crear menú
   create: (menuData) => api.post('/Menu_Dias', menuData),
-  
-  // Actualizar menú
   update: (id, menuData) => api.put(`/Menu_Dias/${id}`, menuData),
-  
-  // Agregar productos al menú
   agregarProductos: (menuId, productos) => api.post(`/Menu_Dias/${menuId}/productos`, { productos }),
-  
-  // Eliminar menú
   delete: (id) => api.delete(`/Menu_Dias/${id}`),
-  
-  // Obtener estadísticas
   getEstadisticas: () => api.get('/Menu_Dias/estadisticas'),
-  
-  // Obtener productos populares
   getProductosPopulares: () => api.get('/Menu_Dias/productos-populares'),
 };
 
@@ -208,3 +198,4 @@ export const menuDiasProductosService = {
 
 
 export default api;
+

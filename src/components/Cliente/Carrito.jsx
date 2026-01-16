@@ -1,29 +1,39 @@
 // src/components/Cliente/Carrito.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCliente } from '../../Hooks/useCliente';
 
 const colors = {
-  primary: '#2c5aa0',
-  primaryLight: '#3a6bc5',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  info: '#3b82f6',
+  primary: '#000000',
+  primaryLight: '#333333',
+  secondary: '#E74C3C',
+  accent: '#FF6B5B',
+  background: '#FFFFFF',
+  cardBg: '#FFFFFF',
+  text: {
+    primary: '#000000',
+    secondary: '#333333',
+    light: '#666666'
+  },
+  border: '#E0E0E0',
+  success: '#689F38',
+  warning: '#FF9800',
+  danger: '#D32F2F',
+  info: '#1976D2',
   gray: {
-    50: '#f9fafb',
-    100: '#f3f4f6',
-    200: '#e5e7eb',
-    300: '#d1d5db',
-    400: '#9ca3af',
-    500: '#6b7280',
-    600: '#4b5563',
-    700: '#374151',
-    800: '#1f2937',
-    900: '#111827'
+    50: '#F9F9F9',
+    100: '#F5F5F5',
+    200: '#EEEEEE',
+    300: '#E0E0E0',
+    400: '#BDBDBD',
+    500: '#9E9E9E',
+    600: '#757575',
+    700: '#616161',
+    800: '#424242',
+    900: '#212121'
   }
 };
 
-// Componente Modal para Pago con Tarjeta (SIMULACIÓN)
+// Componente Modal para Pago con Tarjeta
 const ModalPagoTarjeta = ({ 
   isOpen, 
   onClose, 
@@ -76,54 +86,71 @@ const ModalPagoTarjeta = ({
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(0, 0, 0, 0.5)',
+      background: 'rgba(0, 0, 0, 0.7)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
-      padding: '20px'
+      zIndex: 9999,
+      padding: '20px',
+      backdropFilter: 'blur(4px)'
     }}>
       <div style={{
-        background: '#ffffff',
+        background: colors.background,
         maxWidth: '500px',
         width: '100%',
         borderRadius: '12px',
         overflow: 'hidden',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        animation: 'slideUp 0.3s ease-out'
       }}>
         {/* Header */}
         <div style={{
-          background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})`,
+          background: colors.primary,
           padding: '24px',
-          color: 'white'
+          color: 'white',
+          position: 'relative'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '700' }}>
-                Pago con Tarjeta
-              </h3>
-              <p style={{ margin: '8px 0 0 0', opacity: 0.9, fontSize: '14px' }}>
-                Complete los datos de su tarjeta
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                color: 'white',
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                fontSize: '20px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              ×
-            </button>
+          <button
+            onClick={onClose}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(255,255,255,0.15)',
+              border: 'none',
+              color: 'white',
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              fontSize: '20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+          >
+            ×
+          </button>
+          
+          <div>
+            <h3 style={{ 
+              margin: 0, 
+              fontSize: '22px', 
+              fontWeight: '700',
+              marginBottom: '8px'
+            }}>
+              Pago con Tarjeta
+            </h3>
+            <p style={{ 
+              margin: 0, 
+              opacity: 0.9, 
+              fontSize: '14px'
+            }}>
+              Complete los datos de su tarjeta
+            </p>
           </div>
           
           {/* Monto */}
@@ -131,17 +158,23 @@ const ModalPagoTarjeta = ({
             background: 'rgba(255,255,255,0.1)',
             padding: '16px',
             borderRadius: '8px',
-            marginTop: '16px'
+            marginTop: '20px'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center' 
+            }}>
               <span style={{ fontSize: '14px', opacity: 0.9 }}>Monto a pagar:</span>
-              <span style={{ fontSize: '24px', fontWeight: '700' }}>${monto.toFixed(2)}</span>
+              <span style={{ fontSize: '24px', fontWeight: '800' }}>
+                ${monto.toFixed(2)}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
+        <form onSubmit={handleSubmit} style={{ padding: '32px 24px' }}>
           {/* Número de tarjeta */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{
@@ -169,17 +202,21 @@ const ModalPagoTarjeta = ({
                   borderRadius: '8px',
                   fontSize: '16px',
                   outline: 'none',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  transition: 'all 0.2s ease'
                 }}
+                onFocus={(e) => e.target.style.borderColor = colors.primary}
+                onBlur={(e) => e.target.style.borderColor = colors.gray[300]}
               />
               <div style={{
                 position: 'absolute',
                 left: '14px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: colors.gray[500]
+                color: colors.gray[500],
+                fontSize: '20px'
               }}>
-                  
+                💳
               </div>
             </div>
           </div>
@@ -209,13 +246,21 @@ const ModalPagoTarjeta = ({
                 borderRadius: '8px',
                 fontSize: '16px',
                 outline: 'none',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                transition: 'all 0.2s ease'
               }}
+              onFocus={(e) => e.target.style.borderColor = colors.primary}
+              onBlur={(e) => e.target.style.borderColor = colors.gray[300]}
             />
           </div>
 
           {/* Fecha expiración y CVV */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '1fr 1fr', 
+            gap: '16px', 
+            marginBottom: '20px' 
+          }}>
             <div>
               <label style={{
                 display: 'block',
@@ -239,8 +284,12 @@ const ModalPagoTarjeta = ({
                     borderRadius: '8px',
                     fontSize: '16px',
                     outline: 'none',
-                    background: '#ffffff'
+                    background: colors.background,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
                   }}
+                  onFocus={(e) => e.target.style.borderColor = colors.primary}
+                  onBlur={(e) => e.target.style.borderColor = colors.gray[300]}
                 >
                   <option value="">Mes</option>
                   {months.map(mes => (
@@ -257,8 +306,12 @@ const ModalPagoTarjeta = ({
                     borderRadius: '8px',
                     fontSize: '16px',
                     outline: 'none',
-                    background: '#ffffff'
+                    background: colors.background,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
                   }}
+                  onFocus={(e) => e.target.style.borderColor = colors.primary}
+                  onBlur={(e) => e.target.style.borderColor = colors.gray[300]}
                 >
                   <option value="">Año</option>
                   {years.map(year => (
@@ -295,58 +348,48 @@ const ModalPagoTarjeta = ({
                   borderRadius: '8px',
                   fontSize: '16px',
                   outline: 'none',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  transition: 'all 0.2s ease'
                 }}
+                onFocus={(e) => e.target.style.borderColor = colors.primary}
+                onBlur={(e) => e.target.style.borderColor = colors.gray[300]}
               />
             </div>
           </div>
 
           {/* Checkbox recordar tarjeta */}
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <label style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              cursor: 'pointer',
+              gap: '10px'
+            }}>
+              <div style={{
+                width: '20px',
+                height: '20px',
+                border: `2px solid ${colors.gray[400]}`,
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                background: cardData.recordarTarjeta ? colors.primary : 'transparent'
+              }}>
+                {cardData.recordarTarjeta && (
+                  <span style={{ color: 'white', fontSize: '14px' }}>✓</span>
+                )}
+              </div>
               <input
                 type="checkbox"
                 checked={cardData.recordarTarjeta}
                 onChange={(e) => setCardData(prev => ({ ...prev, recordarTarjeta: e.target.checked }))}
-                style={{ marginRight: '8px', width: '18px', height: '18px' }}
+                style={{ display: 'none' }}
               />
               <span style={{ fontSize: '14px', color: colors.gray[700] }}>
                 Recordar tarjeta para futuras compras
               </span>
             </label>
-          </div>
-
-          {/* Información de seguridad */}
-          <div style={{
-            background: colors.gray[100],
-            padding: '16px',
-            borderRadius: '8px',
-            marginBottom: '24px',
-            border: `1px solid ${colors.gray[200]}`
-          }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-              <div style={{ 
-                background: colors.success,
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: '12px',
-                flexShrink: 0
-              }}>
-                <span style={{ color: 'white', fontSize: '12px', fontWeight: 'bold' }}>✓</span>
-              </div>
-              <div>
-                <div style={{ fontWeight: '600', color: colors.gray[900], marginBottom: '4px' }}>
-                  Pago seguro
-                </div>
-                <div style={{ fontSize: '12px', color: colors.gray[600] }}>
-                  Todos los datos están encriptados. No almacenamos información de su tarjeta.
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Botones */}
@@ -356,18 +399,18 @@ const ModalPagoTarjeta = ({
               onClick={onClose}
               style={{
                 flex: 1,
-                background: colors.gray[300],
+                background: colors.gray[200],
                 color: colors.gray[900],
                 border: 'none',
                 padding: '16px',
-                fontSize: '14px',
+                fontSize: '15px',
                 fontWeight: '700',
                 cursor: 'pointer',
                 borderRadius: '8px',
                 transition: 'all 0.2s ease'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = colors.gray[400]}
-              onMouseLeave={(e) => e.currentTarget.style.background = colors.gray[300]}
+              onMouseEnter={(e) => e.currentTarget.style.background = colors.gray[300]}
+              onMouseLeave={(e) => e.currentTarget.style.background = colors.gray[200]}
             >
               Cancelar
             </button>
@@ -380,7 +423,7 @@ const ModalPagoTarjeta = ({
                 color: 'white',
                 border: 'none',
                 padding: '16px',
-                fontSize: '14px',
+                fontSize: '15px',
                 fontWeight: '700',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 borderRadius: '8px',
@@ -423,6 +466,14 @@ const Carrito = ({
   const [metodoPago, setMetodoPago] = useState('');
   const [mostrarModalTarjeta, setMostrarModalTarjeta] = useState(false);
   const [pedidoConfirmado, setPedidoConfirmado] = useState(null);
+
+  useEffect(() => {
+    // Cerrar el formulario cuando se limpia el carrito
+    if (carrito.length === 0 && mostrarFormulario) {
+      setMostrarFormulario(false);
+      setPasoActual(1);
+    }
+  }, [carrito.length, mostrarFormulario]);
 
   const handleRealizarPedido = async () => {
     if (carrito.length === 0) return;
@@ -476,14 +527,8 @@ const Carrito = ({
         estado_pago: metodo === 'tarjeta' ? 'pagado' : 'pendiente'
       };
 
-      console.log('📦 Datos del pedido a guardar en DB:', datosCliente);
-      console.log('🛒 Carrito a enviar:', carrito);
-      console.log('👤 Usuario ID:', user.id);
-
       // ✅ LLAMAR A LA API REAL PARA GUARDAR EN LA BASE DE DATOS
       const resultado = await realizarPedido(datosCliente, carrito);
-      
-      console.log('✅ Respuesta de la API:', resultado);
       
       setPedidoConfirmado({
         success: true,
@@ -534,8 +579,8 @@ const Carrito = ({
             onClick={() => setMetodoPago('contra_entrega')}
             style={{
               padding: '16px',
-              border: `2px solid ${metodoPago === 'contra_entrega' ? colors.success : colors.gray[300]}`,
-              background: metodoPago === 'contra_entrega' ? colors.success + '10' : colors.gray[50],
+              border: `2px solid ${metodoPago === 'contra_entrega' ? colors.secondary : colors.gray[300]}`,
+              background: metodoPago === 'contra_entrega' ? colors.secondary + '10' : colors.gray[50],
               borderRadius: '8px',
               cursor: 'pointer',
               transition: 'all 0.2s ease'
@@ -556,7 +601,7 @@ const Carrito = ({
                 width: '20px',
                 height: '20px',
                 borderRadius: '50%',
-                border: `2px solid ${metodoPago === 'contra_entrega' ? colors.success : colors.gray[400]}`,
+                border: `2px solid ${metodoPago === 'contra_entrega' ? colors.secondary : colors.gray[400]}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -566,7 +611,7 @@ const Carrito = ({
                     width: '10px',
                     height: '10px',
                     borderRadius: '50%',
-                    background: colors.success
+                    background: colors.secondary
                   }}></div>
                 )}
               </div>
@@ -584,7 +629,7 @@ const Carrito = ({
                   }}>
                     Contra Entrega
                   </div>
-                  <div style={{ fontSize: '24px' }}> </div>
+                  <div style={{ fontSize: '24px' }}>💵</div>
                 </div>
                 <div style={{ 
                   fontSize: '13px',
@@ -652,7 +697,7 @@ const Carrito = ({
                   }}>
                     Tarjeta de Crédito/Débito
                   </div>
-                  <div style={{ fontSize: '24px' }}>  </div>
+                  <div style={{ fontSize: '24px' }}>💳</div>
                 </div>
                 <div style={{ 
                   fontSize: '13px',
@@ -817,12 +862,12 @@ const Carrito = ({
               alignItems: 'center',
               gap: '8px',
               padding: '8px',
-              background: metodoPago === 'tarjeta' ? colors.primary + '10' : colors.success + '10',
+              background: metodoPago === 'tarjeta' ? colors.primary + '10' : colors.secondary + '10',
               borderRadius: '6px',
-              border: `1px solid ${metodoPago === 'tarjeta' ? colors.primary + '30' : colors.success + '30'}`
+              border: `1px solid ${metodoPago === 'tarjeta' ? colors.primary + '30' : colors.secondary + '30'}`
             }}>
               <div style={{ fontSize: '20px' }}>
-                {metodoPago === 'tarjeta' ? '  ' : ' '}
+                {metodoPago === 'tarjeta' ? '💳' : '💵'}
               </div>
               <div>
                 <div style={{ 
@@ -848,7 +893,7 @@ const Carrito = ({
         {/* Total */}
         <div style={{
           padding: '16px',
-          background: colors.gray[900],
+          background: colors.primary,
           color: 'white',
           borderRadius: '8px',
           marginBottom: '20px'
@@ -944,20 +989,22 @@ const Carrito = ({
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'rgba(0, 0, 0, 0.5)',
+        background: 'rgba(0, 0, 0, 0.7)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000,
-        padding: '20px'
+        zIndex: 9999,
+        padding: '20px',
+        backdropFilter: 'blur(4px)'
       }}>
         <div style={{
-          background: '#ffffff',
+          background: colors.background,
           maxWidth: '500px',
           width: '100%',
           borderRadius: '12px',
           overflow: 'hidden',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          animation: 'slideUp 0.3s ease-out'
         }}>
           {/* Header */}
           <div style={{
@@ -969,10 +1016,19 @@ const Carrito = ({
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>
               {esContraEntrega ? '✅' : '🎉'}
             </div>
-            <h3 style={{ margin: 0, fontSize: '24px', fontWeight: '700' }}>
+            <h3 style={{ 
+              margin: 0, 
+              fontSize: '24px', 
+              fontWeight: '700',
+              marginBottom: '8px'
+            }}>
               ¡Pedido Guardado en Base de Datos!
             </h3>
-            <p style={{ margin: '8px 0 0 0', opacity: 0.9, fontSize: '14px' }}>
+            <p style={{ 
+              margin: 0, 
+              opacity: 0.9, 
+              fontSize: '14px' 
+            }}>
               {pedidoConfirmado.mensaje}
             </p>
           </div>
@@ -1117,7 +1173,7 @@ const Carrito = ({
                     justifyContent: 'center',
                     flexShrink: 0
                   }}>
-                    <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}> </span>
+                    <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>💵</span>
                   </div>
                   <div>
                     <div style={{ 
@@ -1159,7 +1215,7 @@ const Carrito = ({
                   color: 'white',
                   border: 'none',
                   padding: '14px 32px',
-                  fontSize: '14px',
+                  fontSize: '15px',
                   fontWeight: '700',
                   cursor: 'pointer',
                   borderRadius: '8px',
@@ -1177,14 +1233,15 @@ const Carrito = ({
     );
   };
 
-  // Resto del código del carrito (sin cambios en la parte superior)
   if (carrito.length === 0) {
     return (
       <div style={{
-        background: '#ffffff',
+        background: colors.cardBg,
         border: `2px solid ${colors.gray[200]}`,
         padding: '48px 24px',
-        textAlign: 'center'
+        textAlign: 'center',
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
       }}>
         <div style={{ 
           fontSize: '64px', 
@@ -1215,6 +1272,7 @@ const Carrito = ({
             padding: '12px',
             background: colors.gray[50],
             border: `1px solid ${colors.gray[200]}`,
+            borderRadius: '8px',
             fontSize: '13px',
             color: colors.gray[700]
           }}>
@@ -1228,14 +1286,18 @@ const Carrito = ({
   return (
     <>
       <div style={{
-        background: '#ffffff',
-        border: `2px solid ${colors.gray[200]}`,
-        position: 'sticky',
-        top: '24px'
+        background: colors.cardBg,
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+        border: `1px solid ${colors.border}`,
+        overflow: 'hidden',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         {/* Header del carrito */}
         <div style={{
-          padding: '20px 24px',
+          padding: '24px',
           borderBottom: `2px solid ${colors.gray[200]}`,
           background: colors.gray[50]
         }}>
@@ -1249,11 +1311,13 @@ const Carrito = ({
                 background: colors.primary,
                 width: '40px',
                 height: '40px',
+                borderRadius: '8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '20px',
-                color: '#ffffff'
+                color: colors.background,
+                fontWeight: 'bold'
               }}>
                 🛒
               </div>
@@ -1289,7 +1353,8 @@ const Carrito = ({
                 fontWeight: '600',
                 transition: 'all 0.2s ease',
                 textTransform: 'uppercase',
-                letterSpacing: '0.5px'
+                letterSpacing: '0.5px',
+                borderRadius: '6px'
               }}
               onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
               onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
@@ -1300,10 +1365,11 @@ const Carrito = ({
           
           {user && (
             <div style={{
-              marginTop: '12px',
+              marginTop: '16px',
               padding: '10px',
-              background: '#ffffff',
+              background: colors.background,
               border: `1px solid ${colors.gray[200]}`,
+              borderRadius: '8px',
               fontSize: '12px',
               color: colors.gray[700],
               display: 'flex',
@@ -1325,7 +1391,7 @@ const Carrito = ({
 
         {/* Lista de productos */}
         <div style={{ 
-          maxHeight: '400px', 
+          flex: 1,
           overflowY: 'auto', 
           padding: '16px'
         }}>
@@ -1337,15 +1403,18 @@ const Carrito = ({
                 marginBottom: '12px',
                 background: colors.gray[50],
                 border: `1px solid ${colors.gray[200]}`,
+                borderRadius: '8px',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = colors.gray[300];
-                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.background = colors.background;
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = colors.gray[200];
                 e.currentTarget.style.background = colors.gray[50];
+                e.currentTarget.style.boxShadow = 'none';
               }}
             >
               <div style={{ 
@@ -1359,7 +1428,8 @@ const Carrito = ({
                     fontWeight: '700', 
                     fontSize: '14px',
                     marginBottom: '4px',
-                    color: colors.gray[900]
+                    color: colors.gray[900],
+                    lineHeight: '1.4'
                   }}>
                     {item.nombre}
                   </div>
@@ -1387,7 +1457,9 @@ const Carrito = ({
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginLeft: '12px',
-                    flexShrink: 0
+                    flexShrink: 0,
+                    borderRadius: '6px',
+                    transition: 'all 0.2s ease'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
                   onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
@@ -1414,7 +1486,9 @@ const Carrito = ({
                     fontWeight: '700',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    borderRadius: '6px',
+                    transition: 'all 0.2s ease'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.background = colors.gray[300]}
                   onMouseLeave={(e) => e.currentTarget.style.background = colors.gray[200]}
@@ -1445,7 +1519,9 @@ const Carrito = ({
                     fontWeight: '700',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    borderRadius: '6px',
+                    transition: 'all 0.2s ease'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.background = colors.primaryLight}
                   onMouseLeave={(e) => e.currentTarget.style.background = colors.primary}
@@ -1469,8 +1545,9 @@ const Carrito = ({
             alignItems: 'center',
             marginBottom: '20px',
             padding: '16px',
-            background: '#ffffff',
-            border: `2px solid ${colors.gray[200]}`
+            background: colors.background,
+            border: `2px solid ${colors.gray[200]}`,
+            borderRadius: '8px'
           }}>
             <div>
               <div style={{ 
@@ -1504,14 +1581,14 @@ const Carrito = ({
           {!mostrarFormulario ? (
             <button
               onClick={() => {
-                if (!user || !user.id) {
+                if (!user || !user.uid) {
                   alert('⚠️ Debes iniciar sesión para realizar un pedido');
                   return;
                 }
                 setMostrarFormulario(true);
               }}
               style={{
-                background: colors.primary,
+                background: colors.secondary,
                 color: 'white',
                 border: 'none',
                 padding: '16px',
@@ -1521,10 +1598,11 @@ const Carrito = ({
                 width: '100%',
                 transition: 'all 0.2s ease',
                 textTransform: 'uppercase',
-                letterSpacing: '0.5px'
+                letterSpacing: '0.5px',
+                borderRadius: '8px'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = colors.primaryLight}
-              onMouseLeave={(e) => e.currentTarget.style.background = colors.primary}
+              onMouseEnter={(e) => e.currentTarget.style.background = colors.accent}
+              onMouseLeave={(e) => e.currentTarget.style.background = colors.secondary}
             >
               Proceder al Pago →
             </button>
@@ -1558,6 +1636,7 @@ const Carrito = ({
                     width: '24px',
                     height: '24px',
                     background: pasoActual >= 1 ? colors.primary : colors.gray[300],
+                    borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1588,6 +1667,7 @@ const Carrito = ({
                     width: '24px',
                     height: '24px',
                     background: pasoActual >= 2 ? colors.primary : colors.gray[300],
+                    borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1618,6 +1698,7 @@ const Carrito = ({
                     width: '24px',
                     height: '24px',
                     background: pasoActual >= 3 ? colors.primary : colors.gray[300],
+                    borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1673,12 +1754,16 @@ const Carrito = ({
                           border: `2px solid ${colors.gray[300]}`,
                           fontSize: '14px',
                           width: '100%',
-                          background: '#ffffff',
+                          background: colors.background,
                           color: colors.gray[900],
                           outline: 'none',
                           fontWeight: '500',
-                          boxSizing: 'border-box'
+                          boxSizing: 'border-box',
+                          borderRadius: '8px',
+                          transition: 'all 0.2s ease'
                         }}
+                        onFocus={(e) => e.target.style.borderColor = colors.primary}
+                        onBlur={(e) => e.target.style.borderColor = colors.gray[300]}
                       />
                     </div>
                     
@@ -1702,13 +1787,17 @@ const Carrito = ({
                           border: `2px solid ${colors.gray[300]}`,
                           fontSize: '14px',
                           width: '100%',
-                          background: '#ffffff',
+                          background: colors.background,
                           color: colors.gray[900],
                           outline: 'none',
                           fontWeight: '500',
                           boxSizing: 'border-box',
-                          cursor: 'pointer'
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
                         }}
+                        onFocus={(e) => e.target.style.borderColor = colors.primary}
+                        onBlur={(e) => e.target.style.borderColor = colors.gray[300]}
                       >
                         <option value="">Selecciona un punto de entrega</option>
                         {puntosEntrega.map(punto => (
@@ -1741,14 +1830,18 @@ const Carrito = ({
                           border: `2px solid ${colors.gray[300]}`,
                           fontSize: '14px',
                           width: '100%',
-                          background: '#ffffff',
+                          background: colors.background,
                           color: colors.gray[900],
                           outline: 'none',
                           resize: 'vertical',
                           fontFamily: 'inherit',
                           fontWeight: '500',
-                          boxSizing: 'border-box'
+                          boxSizing: 'border-box',
+                          borderRadius: '8px',
+                          transition: 'all 0.2s ease'
                         }}
+                        onFocus={(e) => e.target.style.borderColor = colors.primary}
+                        onBlur={(e) => e.target.style.borderColor = colors.gray[300]}
                       />
                     </div>
                   </div>
@@ -1776,7 +1869,7 @@ const Carrito = ({
                   }}
                   disabled={enviando}
                   style={{
-                    background: colors.gray[300],
+                    background: colors.gray[200],
                     color: colors.gray[900],
                     border: 'none',
                     padding: '12px',
@@ -1786,13 +1879,14 @@ const Carrito = ({
                     flex: 1,
                     transition: 'all 0.2s ease',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+                    letterSpacing: '0.5px',
+                    borderRadius: '8px'
                   }}
                   onMouseEnter={(e) => {
-                    if (!enviando) e.currentTarget.style.background = colors.gray[400];
+                    if (!enviando) e.currentTarget.style.background = colors.gray[300];
                   }}
                   onMouseLeave={(e) => {
-                    if (!enviando) e.currentTarget.style.background = colors.gray[300];
+                    if (!enviando) e.currentTarget.style.background = colors.gray[200];
                   }}
                 >
                   {pasoActual === 1 ? 'Cancelar' : '← Atrás'}
@@ -1817,7 +1911,8 @@ const Carrito = ({
                     flex: 1,
                     transition: 'all 0.2s ease',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+                    letterSpacing: '0.5px',
+                    borderRadius: '8px'
                   }}
                   onMouseEnter={(e) => {
                     if (!enviando && !(pasoActual === 1 && (!formData.telefono || !formData.puntoEntregaId)) && !(pasoActual === 2 && !metodoPago)) {

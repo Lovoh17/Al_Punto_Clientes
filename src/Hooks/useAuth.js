@@ -1,50 +1,159 @@
 // src/hooks/useAuth.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
+} from 'firebase/auth';
+import { auth } from '../services/firebase.js'; // Asegúrate de tener este archivo
 import { usuarioService } from '../services/api.js';
 
 export const useAuth = () => {
   const [loading, setLoading] = useState(false);
+  const [firebaseLoading, setFirebaseLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [firebaseUser, setFirebaseUser] = useState(null);
 
+  // Provider de Google
+  const googleProvider = new GoogleAuthProvider();
+
+  // Configurar observador de Firebase
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('🔥 [Firebase Auth State Changed]:', firebaseUser);
+      setFirebaseUser(firebaseUser);
+      setFirebaseLoading(false);
+
+      // Si hay usuario de Firebase pero no en nuestro sistema, sincronizar
+      if (firebaseUser && !user) {
+        await syncUserWithBackend(firebaseUser);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 🔄 Sincronizar usuario de Firebase con nuestro backend
+  const syncUserWithBackend = async (firebaseUser) => {
+    try {
+      console.log('🔄 [useAuth] Sincronizando usuario Firebase con backend...');
+      
+      // Obtener token de Firebase
+      const firebaseToken = await firebaseUser.getIdToken();
+      
+      // Datos del usuario de Firebase
+      const userData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        nombre: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+        foto: firebaseUser.photoURL,
+        provider: firebaseUser.providerData[0]?.providerId || 'google.com',
+        emailVerified: firebaseUser.emailVerified,
+        phoneNumber: firebaseUser.phoneNumber,
+        firebaseToken: firebaseToken
+      };
+
+      console.log('📤 [useAuth] Datos a sincronizar:', userData);
+
+      // Intentar sincronizar con backend
+      const response = await usuarioService.syncFirebaseUser(userData);
+      const { success, data, message } = response.data;
+
+      if (success) {
+        console.log('✅ [useAuth] Usuario sincronizado con backend:', data);
+        
+        // Guardar en localStorage
+        localStorage.setItem('token', data.token || firebaseToken);
+        localStorage.setItem('user', JSON.stringify(data.usuario || userData));
+        setUser(data.usuario || userData);
+        
+        // Redirigir si es necesario
+        if (data.redireccion) {
+          localStorage.setItem('redireccion', data.redireccion);
+          setTimeout(() => {
+            window.location.href = data.redireccion;
+          }, 500);
+        }
+      } else {
+        console.warn('⚠️ [useAuth] Sincronización no exitosa:', message);
+        // Guardar datos básicos de Firebase
+        localStorage.setItem('firebase_user', JSON.stringify(userData));
+      }
+    } catch (err) {
+      console.error('❌ [useAuth] Error sincronizando con backend:', err);
+    }
+  };
+
+  // 🔐 Iniciar sesión con Google
+  const loginWithGoogle = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('🚀 [useAuth] Iniciando sesión con Google...');
+      
+      // Autenticación con Google mediante Firebase
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+      
+      console.log('✅ [useAuth] Firebase auth exitosa:', firebaseUser.email);
+      
+      // Sincronizar con backend
+      await syncUserWithBackend(firebaseUser);
+      
+      return { success: true, user: firebaseUser };
+      
+    } catch (err) {
+      console.error('❌ [useAuth] Error en login con Google:', err);
+      
+      let errorMessage = 'Error al iniciar sesión con Google';
+      
+      if (err.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'El popup de Google fue cerrado';
+      } else if (err.code === 'auth/popup-blocked') {
+        errorMessage = 'El popup fue bloqueado. Permite ventanas emergentes';
+      } else if (err.code) {
+        errorMessage = `Error de Firebase: ${err.code}`;
+      }
+      
+      setError(errorMessage);
+      throw new Error(errorMessage);
+      
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 📝 Login tradicional con email/password
   const login = async (email, password) => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('🚀 [useAuth] Iniciando login con:', { email });
+      console.log('🚀 [useAuth] Iniciando login tradicional:', { email });
       
-      // Hacer petición al backend
+      // Opción 1: Usar Firebase directamente
+      // const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // await syncUserWithBackend(userCredential.user);
+      
+      // Opción 2: Usar tu backend actual (recomendado para mantener consistencia)
       const response = await usuarioService.login({ email, password });
-      
-      console.log('📦 [useAuth] Respuesta completa:', response);
-      console.log('📦 [useAuth] response.data:', response.data);
-      
-      // ✅ ACCEDER CORRECTAMENTE A LA ESTRUCTURA DE RESPUESTA
-      // Axios devuelve: response.data
-      // Tu backend devuelve: { success, data: { token, usuario, redireccion }, message }
       const { success, data, message } = response.data;
-      
-      console.log('✅ [useAuth] Success:', success);
-      console.log('✅ [useAuth] Data:', data);
-      console.log('✅ [useAuth] Message:', message);
       
       if (!success) {
         throw new Error(message || 'Error en el login');
       }
       
-      // Verificar que vengan los datos necesarios
+      // Verificar estructura de respuesta
       if (!data?.token || !data?.usuario) {
-        console.error('❌ [useAuth] Estructura inválida:', data);
-        throw new Error('Respuesta inválida del servidor: falta token o usuario');
+        throw new Error('Respuesta inválida del servidor');
       }
       
-      console.log('💾 [useAuth] Guardando en localStorage...');
-      console.log('  - Token:', data.token.substring(0, 20) + '...');
-      console.log('  - Usuario:', data.usuario);
-      console.log('  - Redirección:', data.redireccion);
-      
-      // ✅ Guardar en localStorage
+      // Guardar en localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.usuario));
       if (data.redireccion) {
@@ -53,36 +162,34 @@ export const useAuth = () => {
       
       setUser(data.usuario);
       
-      console.log('✅ [useAuth] Login exitoso');
-      console.log('🎯 [useAuth] Redirigiendo a:', data.redireccion || '/dashboard');
+      console.log('✅ [useAuth] Login tradicional exitoso');
       
-      // ✅ REDIRIGIR SEGÚN EL ROL
+      // Redirigir
       setTimeout(() => {
         const rutaDestino = data.redireccion || '/dashboard';
-        console.log('🔄 [useAuth] Ejecutando redirección a:', rutaDestino);
         window.location.href = rutaDestino;
       }, 500);
       
       return data;
       
     } catch (err) {
-      console.error('❌ [useAuth] Error en login:', err);
-      console.error('❌ [useAuth] Error response:', err.response);
+      console.error('❌ [useAuth] Error en login tradicional:', err);
       
       let errorMessage = 'Error al iniciar sesión';
       
       if (err.response) {
-        // Error del servidor (4xx, 5xx)
         errorMessage = err.response.data?.error || 
                       err.response.data?.message || 
-                      err.response.data?.mensaje ||
                       `Error del servidor: ${err.response.status}`;
-      } else if (err.request) {
-        // No hubo respuesta del servidor
-        errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión.';
-      } else if (err.message) {
-        // Errores de validación o lógica
-        errorMessage = err.message;
+      } else if (err.code) {
+        // Error de Firebase
+        if (err.code === 'auth/user-not-found') {
+          errorMessage = 'Usuario no encontrado';
+        } else if (err.code === 'auth/wrong-password') {
+          errorMessage = 'Contraseña incorrecta';
+        } else if (err.code === 'auth/invalid-email') {
+          errorMessage = 'Email inválido';
+        }
       }
       
       setError(errorMessage);
@@ -93,34 +200,44 @@ export const useAuth = () => {
     }
   };
 
+  // 📋 Registro con Firebase + Backend
   const register = async (userData) => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('🚀 [useAuth] Iniciando registro con:', userData.email);
+      console.log('🚀 [useAuth] Iniciando registro:', userData.email);
       
-      const response = await usuarioService.registro(userData);
-      const { success, data, message } = response.data;
+      // 1. Crear usuario en Firebase
+      const firebaseResponse = await createUserWithEmailAndPassword(
+        auth, 
+        userData.email, 
+        userData.password
+      );
+      
+      console.log('✅ [useAuth] Usuario creado en Firebase:', firebaseResponse.user.uid);
+      
+      // 2. Preparar datos para backend
+      const completeUserData = {
+        ...userData,
+        uid: firebaseResponse.user.uid,
+        emailVerified: false,
+        provider: 'email/password',
+        firebaseToken: await firebaseResponse.user.getIdToken()
+      };
+      
+      // 3. Guardar en backend
+      const backendResponse = await usuarioService.registro(completeUserData);
+      const { success, data, message } = backendResponse.data;
       
       if (!success) {
+        // Si falla el backend, eliminar usuario de Firebase
+        await firebaseResponse.user.delete();
         throw new Error(message || 'Error en el registro');
       }
       
-      // Si el registro devuelve token (auto-login)
-      if (data?.token && data?.usuario) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.usuario));
-        if (data.redireccion) {
-          localStorage.setItem('redireccion', data.redireccion);
-        }
-        setUser(data.usuario);
-        
-        // Redirigir después del registro
-        setTimeout(() => {
-          window.location.href = data.redireccion || '/dashboard';
-        }, 500);
-      }
+      // 4. Sincronizar y guardar
+      await syncUserWithBackend(firebaseResponse.user);
       
       return data;
       
@@ -129,14 +246,17 @@ export const useAuth = () => {
       
       let errorMessage = 'Error al registrarse';
       
-      if (err.response) {
-        errorMessage = err.response.data?.error || 
-                      err.response.data?.message ||
-                      'Error en el registro';
-      } else if (err.request) {
-        errorMessage = 'No se pudo conectar con el servidor';
-      } else if (err.message) {
-        errorMessage = err.message;
+      if (err.code) {
+        // Errores de Firebase
+        if (err.code === 'auth/email-already-in-use') {
+          errorMessage = 'El email ya está registrado';
+        } else if (err.code === 'auth/weak-password') {
+          errorMessage = 'La contraseña es muy débil';
+        } else if (err.code === 'auth/invalid-email') {
+          errorMessage = 'Email inválido';
+        }
+      } else if (err.response) {
+        errorMessage = err.response.data?.error || 'Error en el registro';
       }
       
       setError(errorMessage);
@@ -147,46 +267,72 @@ export const useAuth = () => {
     }
   };
 
-  const logout = () => {
+  // 🚪 Logout (ambos sistemas)
+  const logout = async () => {
     try {
       console.log('👋 [useAuth] Cerrando sesión...');
+      
+      // 1. Cerrar sesión en Firebase
+      if (auth.currentUser) {
+        await firebaseSignOut(auth);
+      }
+      
+      // 2. Limpiar localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('redireccion');
+      localStorage.removeItem('firebase_user');
+      
+      // 3. Limpiar estado
       setUser(null);
+      setFirebaseUser(null);
       setError(null);
       
-      console.log('✅ [useAuth] Sesión cerrada');
+      console.log('✅ [useAuth] Sesión cerrada en ambos sistemas');
+      
+      // 4. Redirigir a login
       window.location.href = '/login';
+      
     } catch (err) {
       console.error('❌ [useAuth] Error en logout:', err);
+      // Forzar limpieza
+      localStorage.clear();
+      window.location.href = '/login';
     }
   };
 
+  // 🔍 Verificar autenticación
   const checkAuth = () => {
     try {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
-      const redireccion = localStorage.getItem('redireccion');
+      const firebaseUserData = localStorage.getItem('firebase_user');
       
+      // Priorizar usuario del backend
       if (token && userData) {
         const user = JSON.parse(userData);
         setUser(user);
-        return { isAuthenticated: true, user, redireccion };
+        return { isAuthenticated: true, user, source: 'backend' };
+      }
+      
+      // Fallback a Firebase
+      if (firebaseUserData) {
+        const user = JSON.parse(firebaseUserData);
+        setUser(user);
+        return { isAuthenticated: true, user, source: 'firebase' };
       }
       
       return { isAuthenticated: false };
+      
     } catch (err) {
       console.error('❌ [useAuth] Error verificando autenticación:', err);
-      logout();
       return { isAuthenticated: false };
     }
   };
 
+  // 👤 Obtener usuario actual
   const getCurrentUser = () => {
-    if (user) {
-      return user;
-    }
+    if (user) return user;
     
     try {
       const userData = localStorage.getItem('user');
@@ -195,37 +341,78 @@ export const useAuth = () => {
         setUser(parsedUser);
         return parsedUser;
       }
+      
+      const firebaseData = localStorage.getItem('firebase_user');
+      if (firebaseData) {
+        const parsedUser = JSON.parse(firebaseData);
+        setUser(parsedUser);
+        return parsedUser;
+      }
     } catch (err) {
-      console.error('❌ [useAuth] Error obteniendo usuario actual:', err);
+      console.error('❌ [useAuth] Error obteniendo usuario:', err);
     }
     
     return null;
   };
 
-  const getRedireccion = () => {
-    return localStorage.getItem('redireccion') || '/dashboard';
-  };
-
-  const updateUser = (userData) => {
+  // 🔄 Actualizar datos del usuario
+  const updateUser = async (userData) => {
     try {
+      // Actualizar en localStorage
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
+      
+      // Si hay usuario de Firebase, actualizar perfil
+      if (auth.currentUser && userData.nombre) {
+        await updateProfile(auth.currentUser, {
+          displayName: userData.nombre,
+          photoURL: userData.foto
+        });
+      }
     } catch (err) {
       console.error('❌ [useAuth] Error actualizando usuario:', err);
     }
   };
 
+  // 🔑 Obtener token actual
+  const getCurrentToken = async () => {
+    try {
+      // Priorizar token del backend
+      const backendToken = localStorage.getItem('token');
+      if (backendToken) return backendToken;
+      
+      // Fallback a token de Firebase
+      if (auth.currentUser) {
+        return await auth.currentUser.getIdToken();
+      }
+      
+      return null;
+    } catch (err) {
+      console.error('❌ [useAuth] Error obteniendo token:', err);
+      return null;
+    }
+  };
+
   return { 
+    // Métodos de autenticación
     login, 
     register, 
+    loginWithGoogle,
     logout, 
+    
+    // Métodos de verificación
     checkAuth, 
     getCurrentUser,
-    getRedireccion,
+    getCurrentToken,
+    getRedireccion: () => localStorage.getItem('redireccion') || '/dashboard',
     updateUser,
+    
+    // Estados
     user,
-    loading, 
+    firebaseUser,
+    loading,
+    firebaseLoading,
     error,
-    setError // Para limpiar errores manualmente
+    setError
   };
 };
