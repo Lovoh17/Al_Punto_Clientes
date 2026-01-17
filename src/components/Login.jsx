@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import '../index.css'; // Importar el archivo CSS separado
+import '../index.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [debugInfo, setDebugInfo] = useState([]);
-  const [showDebug, setShowDebug] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
@@ -18,7 +16,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { login, loginWithGoogle, loading, error, setError } = useAuth();
 
-  // 📱 Detectar tamaño de pantalla
+  // Detectar tamaño de pantalla
   useEffect(() => {
     const handleResize = () => {
       setScreenSize({
@@ -34,80 +32,44 @@ const Login = () => {
   const isMobile = screenSize.width < 768;
   const isTablet = screenSize.width >= 768 && screenSize.width < 1024;
 
-  // 🔍 Función para agregar logs de debug
-  const addDebugLog = (message, data = null) => {
-    const timestamp = new Date().toLocaleTimeString();
-    const logEntry = {
-      time: timestamp,
-      message,
-      data: data ? JSON.stringify(data, null, 2) : null
-    };
-    setDebugInfo(prev => [...prev, logEntry]);
-    console.log(`[${timestamp}] ${message}`, data || '');
-  };
-
-  // 🔐 Login tradicional
+  // Login tradicional
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (isSubmitting || loading) {
-      addDebugLog('⚠️ Submit bloqueado - Ya hay una petición en curso');
       return;
     }
     
     setIsSubmitting(true);
-    setDebugInfo([]);
     setError(null);
     
     try {
-      addDebugLog('🚀 Iniciando login...', { email });
-      
       const result = await login(email, password);
-      
-      addDebugLog('✅ Login exitoso', result);
-      
       const redireccion = result.redireccion || localStorage.getItem('redireccion') || '/cliente/menu';
-      
-      addDebugLog('🎯 Redirigiendo a:', redireccion);
-      
       navigate(redireccion);
       
     } catch (err) {
-      addDebugLog('❌ Error en login', {
-        message: err.message,
-        response: err.response?.data
-      });
       setIsSubmitting(false);
     }
   };
 
-  // 🔵 Login con Google
+  // Login con Google
   const handleGoogleLogin = async () => {
     if (isSubmitting || loading) {
-      addDebugLog('⚠️ Google login bloqueado - Ya hay una petición en curso');
       return;
     }
     
     setIsSubmitting(true);
-    setDebugInfo([]);
     setError(null);
     
     try {
-      addDebugLog('🚀 Iniciando login con Google...');
-      
-      const result = await loginWithGoogle();
-      
-      addDebugLog('✅ Login Google exitoso', result);
-      
+      await loginWithGoogle();
     } catch (err) {
-      addDebugLog('❌ Error en login Google', {
-        message: err.message
-      });
       setIsSubmitting(false);
     }
   };
 
-  // 🎭 Login demo
+  // Login demo
   const handleDemoLogin = async (role = 'admin') => {
     if (isSubmitting || loading) {
       return;
@@ -119,179 +81,146 @@ const Login = () => {
       cocina: { email: 'cocina@restaurant.com', password: 'cocina123' }
     };
     
-    addDebugLog(`🎭 Cuenta demo seleccionada: ${role}`);
-    
     setIsSubmitting(true);
-    setDebugInfo([]);
     setError(null);
     
     try {
       const result = await login(demoAccounts[role].email, demoAccounts[role].password);
-      
-      addDebugLog('✅ Login demo exitoso', result);
-      
       const redireccion = result.redireccion || '/cliente/menu';
-      addDebugLog('🎯 Redirigiendo a:', redireccion);
-      
       navigate(redireccion);
       
     } catch (err) {
-      addDebugLog('❌ Error en login demo', {
-        message: err.message,
-        response: err.response?.data
-      });
-    } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 🎨 Colores
+  // Colores consistentes con MenuPage
   const colors = {
-    primary: { 
-      red: '#E74C3C', 
-      redDark: '#C0392B', 
-      orange: '#F39C12', 
-      black: '#2C3E50',
-      googleBlue: '#4285F4',
-      googleBlueDark: '#3367D6'
+    primary: '#000000',
+    primaryLight: '#333333',
+    secondary: '#E74C3C',
+    accent: '#FF6B5B',
+    background: '#FFFFFF',
+    cardBg: '#FFFFFF',
+    text: {
+      primary: '#000000',
+      secondary: '#333333',
+      light: '#666666'
     },
-    neutral: { 
-      white: '#FFFFFF', 
-      black: '#1A1A1A', 
-      gray: '#95A5A6', 
-      lightGray: '#ECF0F1',
-      border: '#DDDDDD'
+    border: '#E0E0E0',
+    success: '#689F38',
+    warning: '#E74C3C',
+    gray: {
+      50: '#F9F9F9',
+      100: '#F5F5F5',
+      200: '#EEEEEE',
+      300: '#E0E0E0',
+      400: '#BDBDBD',
+      500: '#9E9E9E',
+      600: '#757575',
+      700: '#616161',
+      800: '#424242',
+      900: '#212121'
     },
-    bg: { 
-      light: '#FFF5F0', 
-      cream: '#FDF6E3',
-      googleHover: '#F8F8F8'
-    }
+    googleBlue: '#4285F4',
+    googleBlueDark: '#3367D6'
   };
 
-  // 📱 Estilos dinámicos basados en tamaño de pantalla
+  // Estilos dinámicos
   const styles = {
     container: {
       minHeight: '100vh',
-      background: isMobile 
-        ? colors.neutral.white 
-        : `linear-gradient(135deg, ${colors.bg.light} 0%, ${colors.bg.cream} 100%)`,
+      background: colors.background,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: isMobile ? '16px' : '20px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      position: 'relative',
-      overflow: 'auto'
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
     },
     loginCard: {
-      backgroundColor: colors.neutral.white,
-      borderRadius: isMobile ? '12px' : '16px',
+      backgroundColor: colors.cardBg,
+      borderRadius: '0',
       boxShadow: isMobile 
-        ? '0 4px 20px rgba(0, 0, 0, 0.1)' 
-        : '0 10px 40px rgba(231, 76, 60, 0.15)',
+        ? '0 2px 8px rgba(0, 0, 0, 0.1)' 
+        : '0 4px 20px rgba(0, 0, 0, 0.1)',
       width: '100%',
-      maxWidth: isMobile ? '100%' : isTablet ? '500px' : '440px',
-      padding: isMobile ? '32px 24px' : isTablet ? '40px 32px' : '48px 40px',
-      border: isMobile ? '1px solid #eee' : `2px solid ${colors.primary.red}20`,
-      margin: isMobile ? '16px' : '0'
+      maxWidth: isMobile ? '100%' : isTablet ? '450px' : '400px',
+      padding: isMobile ? '24px 20px' : '32px 28px',
+      border: `1px solid ${colors.border}`,
+      margin: isMobile ? '0' : '0'
     },
     header: { 
       textAlign: 'center', 
-      marginBottom: isMobile ? '32px' : '40px' 
+      marginBottom: isMobile ? '24px' : '32px' 
     },
-    logo: { 
+    logoContainer: { 
       display: 'flex', 
       justifyContent: 'center', 
-      marginBottom: isMobile ? '16px' : '24px' 
+      marginBottom: isMobile ? '12px' : '20px' 
     },
-    logoIcon: { 
-      position: 'relative', 
-      display: 'inline-block' 
+    logoImage: {
+      width: isMobile ? '60px' : '80px',
+      height: isMobile ? '60px' : '80px',
+      objectFit: 'contain'
     },
-    logoText: {
-      fontSize: isMobile ? '28px' : '36px',
-      fontWeight: '900',
-      color: colors.primary.black,
-      fontFamily: '"Brush Script MT", cursive, "Segoe UI", sans-serif',
-      letterSpacing: '1px'
-    },
-    flame: { 
-      position: 'absolute', 
-      top: isMobile ? '-6px' : '-8px', 
-      right: isMobile ? '-16px' : '-20px', 
-      fontSize: isMobile ? '24px' : '32px' 
+    logoFallback: {
+      width: isMobile ? '60px' : '80px',
+      height: isMobile ? '60px' : '80px',
+      background: colors.primary,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#ffffff',
+      fontSize: isMobile ? '24px' : '32px',
+      fontWeight: '700'
     },
     title: {
-      fontSize: isMobile ? '24px' : '32px',
-      fontWeight: '900',
-      background: `linear-gradient(135deg, ${colors.primary.red} 0%, ${colors.primary.orange} 100%)`,
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      backgroundClip: 'text',
-      margin: '0 0 8px 0',
-      fontFamily: '"Brush Script MT", cursive, "Segoe UI", sans-serif'
+      fontSize: isMobile ? '24px' : '28px',
+      fontWeight: '700',
+      color: colors.text.primary,
+      margin: '0 0 4px 0'
     },
     subtitle: { 
-      fontSize: isMobile ? '13px' : '15px', 
-      color: colors.primary.black, 
+      fontSize: isMobile ? '14px' : '15px', 
+      color: colors.text.light, 
       margin: '0', 
-      fontWeight: '500', 
-      opacity: 0.8 
+      fontWeight: '400'
     },
     form: { 
       display: 'flex', 
       flexDirection: 'column', 
-      gap: isMobile ? '20px' : '24px' 
+      gap: isMobile ? '16px' : '20px' 
     },
     errorAlert: {
       backgroundColor: '#FEE2E2',
-      border: `2px solid ${colors.primary.red}`,
-      borderRadius: '8px',
-      padding: isMobile ? '12px' : '16px',
+      border: `1px solid ${colors.warning}`,
+      borderRadius: '0',
+      padding: isMobile ? '12px' : '14px',
       display: 'flex',
-      alignItems: 'center',
-      gap: '12px'
+      alignItems: 'flex-start',
+      gap: '10px'
     },
     errorIcon: {
-      width: isMobile ? '20px' : '24px',
-      height: isMobile ? '20px' : '24px',
-      backgroundColor: colors.primary.red,
-      color: colors.neutral.white,
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: isMobile ? '12px' : '14px',
+      color: colors.warning,
+      fontSize: '16px',
       fontWeight: '700',
       flexShrink: 0
     },
     errorText: { 
-      color: colors.primary.redDark, 
+      color: colors.text.secondary, 
       fontSize: isMobile ? '13px' : '14px', 
-      fontWeight: '500',
+      fontWeight: '400',
       lineHeight: 1.4
-    },
-    debugButton: {
-      padding: isMobile ? '10px' : '12px',
-      backgroundColor: '#F0F0F0',
-      border: '2px solid #DDD',
-      borderRadius: '8px',
-      fontSize: isMobile ? '13px' : '14px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.2s',
-      width: '100%'
     },
     inputGroup: { 
       display: 'flex', 
       flexDirection: 'column', 
-      gap: '8px' 
+      gap: '6px' 
     },
     label: { 
-      fontSize: isMobile ? '13px' : '14px', 
-      fontWeight: '600', 
-      color: colors.primary.black 
+      fontSize: isMobile ? '14px' : '15px', 
+      fontWeight: '500', 
+      color: colors.text.primary 
     },
     inputContainer: { 
       position: 'relative', 
@@ -301,23 +230,23 @@ const Login = () => {
     input: {
       width: '100%',
       padding: isMobile ? '12px 14px' : '14px 16px',
-      border: `2px solid ${colors.neutral.lightGray}`,
-      borderRadius: '8px',
-      fontSize: isMobile ? '14px' : '15px',
+      border: `1px solid ${colors.border}`,
+      borderRadius: '0',
+      fontSize: isMobile ? '15px' : '16px',
       outline: 'none',
       transition: 'all 0.3s ease',
       boxSizing: 'border-box',
-      backgroundColor: colors.neutral.white,
-      color: colors.neutral.black
+      backgroundColor: colors.cardBg,
+      color: colors.text.primary
     },
     passwordToggle: {
       position: 'absolute',
       right: '12px',
       background: 'none',
       border: 'none',
-      fontSize: isMobile ? '16px' : '18px',
+      fontSize: '16px',
       cursor: 'pointer',
-      color: colors.neutral.gray,
+      color: colors.text.light,
       padding: '4px',
       display: 'flex',
       alignItems: 'center',
@@ -327,68 +256,60 @@ const Login = () => {
       display: 'flex', 
       justifyContent: 'space-between', 
       alignItems: 'center', 
-      marginTop: '-4px',
-      flexWrap: isMobile ? 'wrap' : 'nowrap',
-      gap: isMobile ? '8px' : '0'
+      marginTop: '-4px'
     },
     checkboxLabel: { 
       display: 'flex', 
       alignItems: 'center', 
       gap: '8px', 
       fontSize: isMobile ? '13px' : '14px', 
-      cursor: 'pointer',
-      whiteSpace: 'nowrap'
+      cursor: 'pointer'
     },
     checkbox: { 
-      width: '18px', 
-      height: '18px', 
-      cursor: 'pointer', 
-      accentColor: colors.primary.red 
+      width: '16px', 
+      height: '16px', 
+      cursor: 'pointer'
     },
     forgotPassword: {
       background: 'none',
       border: 'none',
-      color: colors.primary.red,
+      color: colors.secondary,
       fontSize: isMobile ? '13px' : '14px',
-      fontWeight: '600',
+      fontWeight: '500',
       cursor: 'pointer',
-      textAlign: isMobile ? 'left' : 'right',
-      padding: '4px 0'
+      padding: '0'
     },
     submitButton: {
       width: '100%',
       padding: isMobile ? '14px' : '16px',
-      backgroundColor: colors.primary.red,
-      color: colors.neutral.white,
+      backgroundColor: colors.secondary,
+      color: '#ffffff',
       border: 'none',
-      borderRadius: '8px',
+      borderRadius: '0',
       fontSize: isMobile ? '15px' : '16px',
-      fontWeight: '700',
+      fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
-      boxShadow: '0 4px 15px rgba(231, 76, 60, 0.3)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '8px'
+      gap: '8px',
+      marginTop: '8px'
     },
     submitButtonDisabled: { 
-      backgroundColor: colors.neutral.gray, 
-      cursor: 'not-allowed', 
-      boxShadow: 'none',
+      backgroundColor: colors.gray[400], 
+      cursor: 'not-allowed',
       opacity: 0.7
     },
-    
-    // 🔵 Botón de Google
     googleButton: {
       width: '100%',
       padding: isMobile ? '14px' : '16px',
-      backgroundColor: colors.neutral.white,
-      color: colors.neutral.black,
-      border: `2px solid ${colors.neutral.border}`,
-      borderRadius: '8px',
+      backgroundColor: colors.cardBg,
+      color: colors.text.primary,
+      border: `1px solid ${colors.border}`,
+      borderRadius: '0',
       fontSize: isMobile ? '15px' : '16px',
-      fontWeight: '600',
+      fontWeight: '500',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
       display: 'flex',
@@ -402,162 +323,72 @@ const Login = () => {
       cursor: 'not-allowed'
     },
     googleIcon: {
-      width: isMobile ? '20px' : '24px',
-      height: isMobile ? '20px' : '24px'
+      width: isMobile ? '18px' : '20px',
+      height: isMobile ? '18px' : '20px'
     },
-    
     demoSection: { 
-      marginTop: '40px' 
+      marginTop: '32px' 
     },
     divider: { 
       display: 'flex', 
       alignItems: 'center', 
-      margin: '24px 0',
-      color: colors.neutral.gray
+      margin: '20px 0',
+      color: colors.gray[400]
     },
     dividerLine: {
       flex: 1,
       height: '1px',
-      backgroundColor: colors.neutral.lightGray
+      backgroundColor: colors.border
     },
     dividerText: {
-      padding: '0 16px',
+      padding: '0 12px',
       fontSize: isMobile ? '13px' : '14px',
-      fontWeight: '500',
-      color: colors.neutral.gray,
+      fontWeight: '400',
+      color: colors.text.light,
       whiteSpace: 'nowrap'
     },
     demoButtons: { 
       display: 'grid', 
-      gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', 
-      gap: isMobile ? '10px' : '12px',
+      gridTemplateColumns: '1fr 1fr 1fr', 
+      gap: isMobile ? '8px' : '10px',
       marginTop: isMobile ? '16px' : '20px'
     },
     demoButton: {
-      padding: isMobile ? '12px' : '12px 8px',
-      backgroundColor: colors.bg.light,
-      border: `2px solid ${colors.primary.orange}40`,
-      borderRadius: '8px',
+      padding: isMobile ? '10px 8px' : '12px 8px',
+      backgroundColor: colors.gray[50],
+      border: `1px solid ${colors.border}`,
+      borderRadius: '0',
       fontSize: isMobile ? '13px' : '14px',
-      fontWeight: '600',
+      fontWeight: '500',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '8px'
+      gap: '6px',
+      color: colors.text.primary
+    },
+    demoButtonHover: {
+      backgroundColor: colors.gray[100],
+      borderColor: colors.secondary
     },
     footer: { 
       marginTop: isMobile ? '24px' : '32px', 
       textAlign: 'center', 
-      paddingTop: isMobile ? '16px' : '24px', 
-      borderTop: `1px solid ${colors.neutral.lightGray}` 
+      paddingTop: isMobile ? '16px' : '20px', 
+      borderTop: `1px solid ${colors.border}` 
     },
     footerText: { 
       fontSize: isMobile ? '12px' : '13px', 
-      color: colors.neutral.gray, 
+      color: colors.text.light, 
       margin: '0',
       lineHeight: 1.5
-    },
-    
-    // 🐛 Panel Debug (responsive)
-    debugPanel: {
-      position: isMobile ? 'fixed' : 'absolute',
-      top: isMobile ? '0' : '20px',
-      right: isMobile ? '0' : '20px',
-      width: isMobile ? '100%' : '400px',
-      height: isMobile ? '100vh' : 'auto',
-      maxHeight: isMobile ? '100vh' : '80vh',
-      backgroundColor: '#1E1E1E',
-      borderRadius: isMobile ? '0' : '12px',
-      boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
-      zIndex: 1000,
-      overflow: 'hidden',
-      border: '2px solid #333',
-      transform: isMobile ? (showDebug ? 'translateX(0)' : 'translateX(100%)') : 'none',
-      transition: 'transform 0.3s ease'
-    },
-    debugHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: isMobile ? '12px 16px' : '16px',
-      backgroundColor: '#2D2D2D',
-      borderBottom: '1px solid #404040'
-    },
-    debugTitle: { 
-      margin: 0, 
-      fontSize: isMobile ? '14px' : '16px', 
-      fontWeight: '700', 
-      color: '#FFF' 
-    },
-    debugClose: { 
-      background: 'none', 
-      border: 'none', 
-      color: '#999', 
-      fontSize: isMobile ? '18px' : '20px', 
-      cursor: 'pointer', 
-      padding: '4px 8px' 
-    },
-    debugContent: {
-      padding: isMobile ? '12px' : '16px',
-      maxHeight: isMobile ? 'calc(100vh - 45px)' : 'calc(80vh - 60px)',
-      overflowY: 'auto',
-      fontSize: isMobile ? '12px' : '13px',
-      fontFamily: 'Monaco, Consolas, monospace'
-    },
-    debugLog: { 
-      marginBottom: isMobile ? '12px' : '16px', 
-      paddingBottom: isMobile ? '12px' : '16px', 
-      borderBottom: '1px solid #333' 
-    },
-    debugTime: { 
-      color: '#888', 
-      fontSize: isMobile ? '10px' : '11px', 
-      display: 'block', 
-      marginBottom: '4px' 
-    },
-    debugMessage: { 
-      color: '#FFF', 
-      display: 'block', 
-      marginBottom: '8px',
-      wordBreak: 'break-word' 
-    },
-    debugData: {
-      backgroundColor: '#0D0D0D',
-      padding: isMobile ? '8px' : '12px',
-      borderRadius: '4px',
-      color: '#4EC9B0',
-      fontSize: isMobile ? '10px' : '11px',
-      overflowX: 'auto',
-      margin: 0
-    },
-    
-    // 📱 Botón flotante para debug en móvil
-    debugMobileButton: {
-      position: 'fixed',
-      bottom: '20px',
-      right: '20px',
-      width: '50px',
-      height: '50px',
-      borderRadius: '50%',
-      backgroundColor: '#333',
-      color: '#FFF',
-      border: 'none',
-      fontSize: '20px',
-      cursor: 'pointer',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-      zIndex: 999,
-      display: isMobile ? 'flex' : 'none',
-      alignItems: 'center',
-      justifyContent: 'center'
     }
   };
 
-  // SVG del logo de Google
+  // SVG del logo de Google (sin cambios)
   const GoogleIcon = () => (
     <svg 
-      className="google-icon" 
       viewBox="0 0 24 24" 
       style={styles.googleIcon}
     >
@@ -570,55 +401,25 @@ const Login = () => {
 
   return (
     <div style={styles.container}>
-      {/* 🐛 Botón flotante para debug en móvil */}
-      {isMobile && debugInfo.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setShowDebug(!showDebug)}
-          style={styles.debugMobileButton}
-        >
-          🐛
-        </button>
-      )}
-
-      {/* 🐛 Panel de Debug */}
-      {debugInfo.length > 0 && (
-        <div style={styles.debugPanel}>
-          <div style={styles.debugHeader}>
-            <h3 style={styles.debugTitle}>🐛 Debug Console ({debugInfo.length})</h3>
-            <button 
-              onClick={() => setShowDebug(false)}
-              style={styles.debugClose}
-              aria-label="Cerrar debug"
-            >
-              ✕
-            </button>
-          </div>
-          <div style={styles.debugContent}>
-            {debugInfo.map((log, index) => (
-              <div key={index} style={styles.debugLog}>
-                <span style={styles.debugTime}>[{log.time}]</span>
-                <span style={styles.debugMessage}>{log.message}</span>
-                {log.data && (
-                  <pre style={styles.debugData}>{log.data}</pre>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div style={styles.loginCard}>
         {/* Header */}
         <div style={styles.header}>
-          <div style={styles.logo}>
-            <div style={styles.logoIcon}>
-              <span style={styles.logoText}>Alpunto</span>
-              <div style={styles.flame}>🔥</div>
-            </div>
+          <div style={styles.logoContainer}>
+            <img 
+              src="/src/assets/Images/Logos/logo_Blanco.jpg"
+              alt="Logo Restaurante"
+              style={styles.logoImage}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.style.display = 'none';
+                e.target.parentElement.innerHTML = `
+                  <div style="width: ${isMobile ? '70px' : '90px'}; height: ${isMobile ? '70px' : '90px'}; background: ${colors.primary}; display: flex; align-items: center; justify-content: center; color: white; font-size: ${isMobile ? '24px' : '32px'}; font-weight: 700; border-radius: 0;">
+                    R
+                  </div>
+                `;
+              }}
+            />
           </div>
-          <h1 style={styles.title}>Alpunto</h1>
-          <p style={styles.subtitle}>Sistema de Gestión de Comandas</p>
         </div>
 
         {/* Formulario */}
@@ -630,17 +431,6 @@ const Login = () => {
             </div>
           )}
 
-          {/* 🐛 Botón para mostrar debug (solo en desktop) */}
-          {!isMobile && debugInfo.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowDebug(!showDebug)}
-              style={styles.debugButton}
-            >
-              {showDebug ? '🐛 Ocultar Debug' : `🐛 Ver Debug (${debugInfo.length})`}
-            </button>
-          )}
-
           {/* Campo Email */}
           <div style={styles.inputGroup}>
             <label style={styles.label}>Correo Electrónico</label>
@@ -649,12 +439,11 @@ const Login = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@alpunto.com"
+                placeholder="usuario@restaurant.com"
                 required
                 disabled={loading || isSubmitting}
                 style={styles.input}
                 autoComplete="email"
-                aria-label="Correo electrónico"
               />
             </div>
           </div>
@@ -672,16 +461,14 @@ const Login = () => {
                 disabled={loading || isSubmitting}
                 style={styles.input}
                 autoComplete="current-password"
-                aria-label="Contraseña"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 style={styles.passwordToggle}
                 tabIndex={-1}
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+                {showPassword ? '👁️' : '👁️'}
               </button>
             </div>
           </div>
@@ -692,14 +479,12 @@ const Login = () => {
               <input 
                 type="checkbox" 
                 style={styles.checkbox} 
-                aria-label="Recordar sesión"
               />
               Recordar sesión
             </label>
             <button 
               type="button" 
               style={styles.forgotPassword}
-              aria-label="¿Olvidaste tu contraseña?"
             >
               ¿Olvidaste tu contraseña?
             </button>
@@ -713,23 +498,12 @@ const Login = () => {
               ...styles.submitButton,
               ...((loading || isSubmitting) ? styles.submitButtonDisabled : {})
             }}
-            aria-label="Iniciar sesión"
           >
-            {(loading || isSubmitting) ? (
-              <>
-                <span>⏳</span>
-                <span>Iniciando sesión...</span>
-              </>
-            ) : (
-              <>
-                <span>🔥</span>
-                <span>Iniciar Sesión</span>
-              </>
-            )}
+            {loading || isSubmitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
         </form>
 
-        {/* 🔵 Botón de Google */}
+        {/* Botón de Google */}
         <button
           type="button"
           onClick={handleGoogleLogin}
@@ -738,63 +512,18 @@ const Login = () => {
             ...styles.googleButton,
             ...((loading || isSubmitting) ? styles.googleButtonDisabled : {})
           }}
-          aria-label="Continuar con Google"
-          className="google-login-btn"
         >
           <GoogleIcon />
           <span>Continuar con Google</span>
         </button>
 
-        {/* Cuentas de demostración */}
-        <div style={styles.demoSection}>
-          <div style={styles.divider}>
-            <div style={styles.dividerLine}></div>
-            <span style={styles.dividerText}>O prueba con</span>
-            <div style={styles.dividerLine}></div>
-          </div>
-          <div style={styles.demoButtons}>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('admin')}
-              disabled={loading || isSubmitting}
-              style={styles.demoButton}
-              aria-label="Login como administrador demo"
-              className="demo-btn"
-            >
-              <span>👨‍💼</span>
-              <span>Admin</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('mesero')}
-              disabled={loading || isSubmitting}
-              style={styles.demoButton}
-              aria-label="Login como mesero demo"
-              className="demo-btn"
-            >
-              <span>🍽️</span>
-              <span>Mesero</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('cocina')}
-              disabled={loading || isSubmitting}
-              style={styles.demoButton}
-              aria-label="Login como cocina demo"
-              className="demo-btn"
-            >
-              <span>👨‍🍳</span>
-              <span>Cocina</span>
-            </button>
-          </div>
-        </div>
+        
 
         {/* Footer */}
         <div style={styles.footer}>
           <p style={styles.footerText}>
-            © 2024 Alpunto 🔥 · Sistema de Gestión de Comandas
+            El Arte de Cocinar con Precision y Sabor - Al Punto
             <br />
-            {isMobile && <span style={{ fontSize: '11px', opacity: 0.7 }}>Versión móvil</span>}
           </p>
         </div>
       </div>

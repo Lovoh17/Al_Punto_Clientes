@@ -185,7 +185,7 @@ const MenuPage = () => {
             flex: 1
           }}>
             <img 
-              src="/src/assets/Images/Logos/logo_Blanco.jpg"
+              src="/src/assets/Images/Logos/logo-remove.png"
               alt="Logo Restaurante"
               style={{
                 width: '40px',
@@ -262,11 +262,11 @@ const MenuPage = () => {
           width: isMobile ? '280px' : '280px',
           background: colors.cardBg,
           borderRight: isMobile && !showSidebar ? 'none' : `1px solid ${colors.border}`,
-          padding: isMobile ? '16px' : '32px 16px',
+          padding: isMobile ? '16px' : '-34px 16px',
           position: isMobile ? 'fixed' : 'fixed',
           height: isMobile ? '100vh' : '100vh',
           overflowY: 'auto',
-          zIndex: 1001,
+          zIndex: 1,
           left: isMobile && !showSidebar ? '-280px' : '0',
           top: isMobile ? '0' : '0',
           transition: 'left 0.3s ease',
@@ -282,7 +282,7 @@ const MenuPage = () => {
             padding: '0 8px'
           }}>
             <img 
-              src="/src/assets/Images/Logos/logo_Blanco.jpg"
+              src="../../assets/Images/Logos/logo_Blanco.jpg"
               alt="Logo Restaurante"
               style={{
                 width: isMobile ? '48px' : '64px',
@@ -440,7 +440,7 @@ const MenuPage = () => {
                   fontSize: '28px',
                   fontWeight: '700',
                   color: colors.text.primary,
-                  margin: '0 0 4px 180px',
+                  margin: '0 0 4px 0',
                   letterSpacing: '-0.5px'
                 }}>
                   {'Platos Principales'}
