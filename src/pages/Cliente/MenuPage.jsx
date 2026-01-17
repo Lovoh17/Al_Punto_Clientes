@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCliente } from '../../Hooks/useCliente';
 import Carrito from '../../components/Cliente/Carrito';
 import Loading from '../../components/Common/Loading';
 import Error from '../../components/Common/Error';
 
 const colors = {
-  primary: '#000000', // Negro del logo
-  primaryLight: '#333333', // Negro más claro
-  secondary: '#E74C3C', // Rojo/naranja del logo
-  accent: '#FF6B5B', // Variante más clara del rojo
-  background: '#FFFFFF', // Blanco
-  cardBg: '#FFFFFF', // Blanco
+  primary: '#000000',
+  primaryLight: '#333333',
+  secondary: '#E74C3C',
+  accent: '#FF6B5B',
+  background: '#FFFFFF',
+  cardBg: '#FFFFFF',
   text: {
-    primary: '#000000', // Negro
-    secondary: '#333333', // Gris oscuro
-    light: '#666666' // Gris medio
+    primary: '#000000',
+    secondary: '#333333',
+    light: '#666666'
   },
-  border: '#E0E0E0', // Gris claro
-  success: '#689F38', // Verde
-  warning: '#E74C3C', // Rojo
+  border: '#E0E0E0',
+  success: '#689F38',
+  warning: '#E74C3C',
   gray: {
     50: '#F9F9F9',
     100: '#F5F5F5',
@@ -36,6 +36,8 @@ const colors = {
 const MenuPage = () => {
   const [carrito, setCarrito] = useState([]);
   const [mostrarCarritoMovil, setMostrarCarritoMovil] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const {
     categorias,
@@ -92,6 +94,20 @@ const MenuPage = () => {
 
   const totalCarrito = carrito.reduce((total, item) => total + (item.precio * item.cantidad), 0);
 
+  // Detectar cambios en el tamaño de la ventana
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setShowSidebar(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (loading) return <Loading />;
   if (error) return <Error message={error} />;
 
@@ -99,504 +115,619 @@ const MenuPage = () => {
     <div style={{ 
       minHeight: '100vh', 
       background: colors.background,
-      display: 'flex'
+      display: 'flex',
+      flexDirection: 'column'
     }}>
-      {/* Sidebar de Categorías */}
-      <aside style={{
-        width: '280px',
-        background: colors.cardBg,
-        borderRight: `1px solid ${colors.border}`,
-        padding: '32px 16px',
-        position: 'fixed',
-        height: '100vh',
-        overflowY: 'auto',
-        display: window.innerWidth >= 768 ? 'block' : 'none'
-      }}>
-        {/* Logo */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '12px',
-          marginBottom: '40px',
-          padding: '0 8px'
-        }}>
-          <img 
-            src=""
-            alt="Logo Restaurante"
-            style={{
-              width: '64px',
-              height: '64px',
-              objectFit: 'contain'
-            }}
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.style.display = 'none';
-              e.target.parentElement.innerHTML = `
-                <div style="width: 64px; height: 64px; background: ${colors.primary}; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700;">
-                  R
-                </div>
-                <div>
-                  <div style="font-size: 18px; font-weight: 700; color: ${colors.text.primary}">
-                    Restaurante
-                  </div>
-                  <div style="font-size: 14px; color: ${colors.text.light}">
-                    Sabor Auténtico
-                  </div>
-                </div>
-              `;
-            }}
-          />
-        </div>
-
-        {/* Categorías desde la API */}
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{
-            fontSize: '13px',
-            fontWeight: '600',
-            color: colors.text.light,
-            textTransform: 'uppercase',
-            letterSpacing: '1px',
-            marginBottom: '16px',
-            padding: '0 12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <div style={{
-              width: '4px',
-              height: '16px',
-              background: colors.secondary
-            }} />
-            <span>NUESTRO MENÚ</span>
-          </div>
-          
-          <div style={{ padding: '0 8px' }}>
-            {categorias.map(categoria => {
-              const isActive = categoriaActiva === categoria.id;
-              const itemCount = productos.filter(p => p.categoria_id === categoria.id).length;
-              
-              return (
-                <button
-                  key={categoria.id}
-                  onClick={() => setCategoriaActiva(categoria.id)}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '12px',
-                    padding: '14px 16px',
-                    marginBottom: '6px',
-                    background: isActive ? colors.primaryLight + '15' : 'transparent',
-                    color: isActive ? colors.secondary : colors.text.secondary,
-                    border: 'none',
-                    borderRadius: '0',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    fontWeight: isActive ? '600' : '500',
-                    transition: 'all 0.3s ease',
-                    textAlign: 'left',
-                    position: 'relative'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = colors.gray[100];
-                      e.currentTarget.style.color = colors.secondary;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = colors.text.secondary;
-                    }
-                  }}
-                >
-                  <span>{categoria.nombre}</span>
-                  {itemCount > 0 && (
-                    <span style={{
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: isActive ? colors.secondary : colors.text.light,
-                      background: isActive ? colors.secondary + '20' : colors.gray[100],
-                      padding: '2px 8px',
-                      borderRadius: '0'
-                    }}>
-                      {itemCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Botón Reservar Mesa */}
-        <div style={{ padding: '0 12px' }}>
-          <button style={{
-            width: '100%',
-            background: colors.secondary,
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '0',
-            padding: '16px',
-            fontSize: '15px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            marginTop: '24px',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = colors.accent;
-            e.currentTarget.style.transform = 'translateY(-2px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = colors.secondary;
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}>
-            Reservar Mesa
-          </button>
-        </div>
-
-        {/* Información del Restaurante */}
-        <div style={{
-          marginTop: '32px',
-          padding: '20px 16px',
-          background: colors.gray[100],
-          borderRadius: '0',
-          border: `1px solid ${colors.border}`
-        }}>
-          <div style={{
-            fontSize: '13px',
-            fontWeight: '600',
-            color: colors.text.secondary,
-            marginBottom: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <span style={{ fontSize: '16px' }}>⏰</span>
-            Horario
-          </div>
-          <div style={{
-            fontSize: '12px',
-            color: colors.text.light,
-            lineHeight: '1.6'
-          }}>
-            <div>Lun-Vie: 12:00 - 23:00</div>
-            <div>Sáb-Dom: 11:00 - 00:00</div>
-          </div>
-        </div>
-
-        {/* Versión */}
-        <div style={{
-          marginTop: 'auto',
-          padding: '24px 12px 0 12px',
-          fontSize: '11px',
-          color: colors.text.light,
-          textAlign: 'center',
-          borderTop: `1px solid ${colors.border}`
-        }}>
-          <div>v2.4.0 • Sistema de Comandas</div>
-        </div>
-      </aside>
-
-      {/* Contenido Principal */}
-      <main style={{
-        marginLeft: window.innerWidth >= 768 ? '280px' : '0',
-        flex: 1,
-        paddingBottom: carrito.length > 0 && window.innerWidth < 768 ? '100px' : '0'
-      }}>
-        {/* Header Superior */}
+      {/* Header para móvil */}
+      {isMobile && (
         <header style={{
           background: colors.cardBg,
           borderBottom: `1px solid ${colors.border}`,
-          padding: '20px 32px',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
+          padding: '16px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          gap: '20px'
+          gap: '12px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000
         }}>
-          {/* Título de la categoría actual */}
-          <div>
-            <h1 style={{
-              fontSize: '28px',
-              fontWeight: '700',
-              color: colors.text.primary,
-              margin: '0 0 4px 0',
-              letterSpacing: '-0.5px'
+          {/* Botón menú hamburguesa */}
+          <button
+            onClick={() => setShowSidebar(!showSidebar)}
+            style={{
+              background: 'none',
+              border: `1px solid ${colors.border}`,
+              borderRadius: '0',
+              padding: '10px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '44px',
+              minHeight: '44px'
+            }}
+          >
+            <div style={{
+              width: '20px',
+              height: '2px',
+              background: colors.text.primary,
+              position: 'relative',
+              transition: 'all 0.3s ease'
             }}>
-              {categorias.find(c => c.id === categoriaActiva)?.nombre || 'Platos Principales'}
-            </h1>
-            <p style={{
-              fontSize: '14px',
-              color: colors.text.light,
-              margin: 0
-            }}>
-              {productosFiltrados.length} {productosFiltrados.length === 1 ? 'producto disponible' : 'productos disponibles'}
-            </p>
-          </div>
-        
-          {/* Búsqueda y Carrito */}
+              <div style={{
+                position: 'absolute',
+                top: '-6px',
+                left: 0,
+                width: '100%',
+                height: '2px',
+                background: colors.text.primary,
+                transition: 'all 0.3s ease'
+              }} />
+              <div style={{
+                position: 'absolute',
+                bottom: '-6px',
+                left: 0,
+                width: '100%',
+                height: '2px',
+                background: colors.text.primary,
+                transition: 'all 0.3s ease'
+              }} />
+            </div>
+          </button>
+
+          {/* Logo móvil */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '16px'
+            justifyContent: 'center',
+            gap: '8px',
+            flex: 1
           }}>
-            <div style={{
-              position: 'relative',
-              minWidth: '240px'
+            <img 
+              src="/src/assets/Images/Logos/logo_Blanco.jpg"
+              alt="Logo Restaurante"
+              style={{
+                width: '40px',
+                height: '40px',
+                objectFit: 'contain'
+              }}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.style.display = 'none';
+                e.target.parentElement.innerHTML = `
+                  <div style="width: 40px; height: 40px; background: ${colors.primary}; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 700;">
+                    R
+                  </div>
+                `;
+              }}
+            />
+          </div>
+
+          {/* Botón carrito móvil */}
+          <button
+            onClick={() => setMostrarCarritoMovil(!mostrarCarritoMovil)}
+            style={{
+              background: colors.secondary,
+              border: 'none',
+              borderRadius: '0',
+              padding: '10px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '44px',
+              minHeight: '44px',
+              position: 'relative'
+            }}
+          >
+            <div style={{ 
+              fontSize: '16px',
+              fontWeight: '700',
+              color: '#ffffff'
             }}>
-              <input
-                type="text"
-                placeholder="Buscar plato..."
-                style={{
-                  width: '100%',
-                  background: colors.gray[100],
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: '0',
-                  padding: '12px 16px 12px 44px',
-                  fontSize: '14px',
-                  color: colors.text.secondary,
-                  outline: 'none',
-                  transition: 'all 0.3s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = colors.secondary;
-                  e.target.style.boxShadow = `0 0 0 3px ${colors.secondary}15`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = colors.border;
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
+              🛒
+            </div>
+            {carrito.length > 0 && (
               <div style={{
                 position: 'absolute',
-                left: '16px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: colors.text.light,
-                fontSize: '16px'
-              }}>
-                🔍
-              </div>
-            </div>
-
-            <button
-              onClick={() => setMostrarCarritoMovil(!mostrarCarritoMovil)}
-              style={{
-                background: colors.cardBg,
-                border: `2px solid ${carrito.length > 0 ? colors.secondary : colors.border}`,
+                top: '-4px',
+                right: '-4px',
+                background: colors.accent,
+                color: '#ffffff',
                 borderRadius: '0',
-                padding: '12px',
-                cursor: 'pointer',
+                minWidth: '20px',
+                height: '20px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                position: 'relative',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = colors.secondary;
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = carrito.length > 0 ? colors.secondary : colors.border;
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              <div style={{ 
-                fontSize: '20px',
-                color: colors.secondary
+                justifyContent: 'center',
+                fontSize: '11px',
+                fontWeight: '700',
+                padding: '0 4px'
               }}>
-                🛒
+                {carrito.length}
               </div>
-              {carrito.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  top: '-8px',
-                  right: '-8px',
-                  background: colors.secondary,
-                  color: '#ffffff',
+            )}
+          </button>
+        </header>
+      )}
+
+      <div style={{ 
+        display: 'flex', 
+        flex: 1,
+        position: 'relative'
+      }}>
+        {/* Sidebar de Categorías */}
+        <aside style={{
+          width: isMobile ? '280px' : '280px',
+          background: colors.cardBg,
+          borderRight: isMobile && !showSidebar ? 'none' : `1px solid ${colors.border}`,
+          padding: isMobile ? '16px' : '32px 16px',
+          position: isMobile ? 'fixed' : 'fixed',
+          height: isMobile ? '100vh' : '100vh',
+          overflowY: 'auto',
+          zIndex: 1001,
+          left: isMobile && !showSidebar ? '-280px' : '0',
+          top: isMobile ? '0' : '0',
+          transition: 'left 0.3s ease',
+          display: isMobile ? 'block' : 'block'
+        }}>
+          {/* Logo */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: isMobile ? '8px' : '12px',
+            marginBottom: isMobile ? '24px' : '40px',
+            padding: '0 8px'
+          }}>
+            <img 
+              src="/src/assets/Images/Logos/logo_Blanco.jpg"
+              alt="Logo Restaurante"
+              style={{
+                width: isMobile ? '48px' : '64px',
+                height: isMobile ? '48px' : '64px',
+                objectFit: 'contain'
+              }}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.style.display = 'none';
+                e.target.parentElement.innerHTML = `
+                  <div style="width: ${isMobile ? '48px' : '64px'}; height: ${isMobile ? '48px' : '64px'}; background: ${colors.primary}; display: flex; align-items: center; justify-content: center; color: white; font-size: ${isMobile ? '20px' : '24px'}; font-weight: 700;">
+                    R
+                  </div>
+                  <div>
+                    <div style="font-size: ${isMobile ? '16px' : '18px'}; font-weight: 700; color: ${colors.text.primary}">
+                      Restaurante
+                    </div>
+                    <div style="font-size: ${isMobile ? '12px' : '14px'}; color: ${colors.text.light}">
+                      Sabor Auténtico
+                    </div>
+                  </div>
+                `;
+              }}
+            />
+          </div>
+
+          {/* Categorías desde la API */}
+          <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
+            <div style={{
+              fontSize: isMobile ? '12px' : '13px',
+              fontWeight: '600',
+              color: colors.text.light,
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              marginBottom: '16px',
+              padding: '0 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <div style={{
+                width: '4px',
+                height: '16px',
+                background: colors.secondary
+              }} />
+              <span>NUESTRO MENÚ</span>
+            </div>
+            
+            {/* Lista de categorías */}
+            <div style={{ padding: '0 4px' }}>
+              <button
+                onClick={() => {
+                  setCategoriaActiva('todos');
+                  if (isMobile) setShowSidebar(false);
+                }}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: isMobile ? '12px 16px' : '16px 20px',
+                  background: categoriaActiva === 'todos' ? colors.gray[100] : 'transparent',
+                  border: 'none',
                   borderRadius: '0',
-                  minWidth: '24px',
-                  height: '24px',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? '14px' : '15px',
+                  fontWeight: categoriaActiva === 'todos' ? '600' : '500',
+                  color: categoriaActiva === 'todos' ? colors.text.primary : colors.text.secondary,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  padding: '0 6px'
-                }}>
-                  {carrito.length}
-                </div>
-              )}
-            </button>
-          </div>
-        </header>
-
-        {/* Contenido de Productos */}
-        <div style={{ padding: '40px 32px' }}>
-          {/* Grid de Productos */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-            gap: '32px'
-          }}>
-            {productosFiltrados.map(producto => (
-              <div key={producto.id} style={{
-                background: colors.cardBg,
-                borderRadius: '0',
-                overflow: 'hidden',
-                border: `1px solid ${colors.border}`,
-                transition: 'all 0.3s ease',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.1)';
-                e.currentTarget.style.borderColor = colors.secondary;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
-                e.currentTarget.style.borderColor = colors.border;
-              }}>
-                {/* Imagen del Producto */}
+                  justifyContent: 'space-between',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.background = colors.gray[50];
+                    e.currentTarget.style.color = colors.text.primary;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.background = categoriaActiva === 'todos' ? colors.gray[100] : 'transparent';
+                    e.currentTarget.style.color = categoriaActiva === 'todos' ? colors.text.primary : colors.text.secondary;
+                  }
+                }}
+              >
+                <span>Todos los produtos</span>
                 <div style={{
-                  height: '200px',
-                  background: `url(${producto.imagen || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600'}) center/cover`,
-                  position: 'relative'
+                  background: categoriaActiva === 'todos' ? colors.secondary : colors.gray[200],
+                  color: categoriaActiva === 'todos' ? '#ffffff' : colors.text.light,
+                  fontSize: isMobile ? '11px' : '12px',
+                  padding: isMobile ? '2px 8px' : '4px 10px',
+                  borderRadius: '0',
+                  fontWeight: '600'
                 }}>
-                  {producto.precio && (
+                  {productos.length}
+                </div>
+              </button>
+
+              
+            </div>
+          </div>
+
+          {/* Versión */}
+          <div style={{
+            marginTop: 'auto',
+            padding: isMobile ? '16px 8px 0 8px' : '24px 12px 0 12px',
+            fontSize: isMobile ? '10px' : '11px',
+            color: colors.text.light,
+            textAlign: 'center',
+            borderTop: `1px solid ${colors.border}`
+          }}>
+            <div>El Arte de Cocinar con Precision y Sabor - 2025</div>
+          </div>
+        </aside>
+
+        {/* Overlay para móvil cuando sidebar está abierto */}
+        {isMobile && showSidebar && (
+          <div 
+            onClick={() => setShowSidebar(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 1000
+            }}
+          />
+        )}
+
+        {/* Contenido Principal */}
+        <main style={{
+          marginLeft: isMobile ? '0' : '100px',
+          flex: 1,
+          width: '100%',
+          paddingBottom: carrito.length > 0 && isMobile ? '100px' : '0'
+        }}>
+          {/* Header Superior - Solo en desktop */}
+          {!isMobile && (
+            <header style={{
+              background: colors.cardBg,
+              borderBottom: `1px solid ${colors.border}`,
+              padding: '20px 32px',
+              position: 'sticky',
+              top: 0,
+              zIndex: 100,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '20px'
+            }}>
+              {/* Título de la categoría actual */}
+              <div>
+                <h1 style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  color: colors.text.primary,
+                  margin: '0 0 4px 180px',
+                  letterSpacing: '-0.5px'
+                }}>
+                  {'Platos Principales'}
+                </h1>
+                <p style={{
+                  fontSize: '14px',
+                  color: colors.text.light,
+                  margin: 0
+                }}>
+                  {productosFiltrados.length} {productosFiltrados.length === 1 ? 'producto disponible' : 'productos disponibles'}
+                </p>
+              </div>
+            
+              {/* Búsqueda y Carrito */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px'
+              }}>
+                <button
+                  onClick={() => setMostrarCarritoMovil(!mostrarCarritoMovil)}
+                  style={{
+                    background: colors.cardBg,
+                    borderRadius: '0',
+                    padding: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    position: 'relative',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = colors.secondary;
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = carrito.length > 0 ? colors.secondary : colors.border;
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 20px',
+                    background: colors.secondary,
+                    borderRadius: '5px',
+                  }}>
+                    <div style={{ 
+                      fontSize: '18px',
+                      fontWeight: '700',
+                      color: '#ffffff',
+                      letterSpacing: '0.5px'
+                    }}>
+                      Carrito
+                    </div>
+                  </div>
+                  {carrito.length > 0 && (
                     <div style={{
                       position: 'absolute',
-                      top: '16px',
-                      right: '16px',
+                      top: '-8px',
+                      right: '-8px',
                       background: colors.secondary,
                       color: '#ffffff',
-                      padding: '8px 16px',
                       borderRadius: '0',
-                      fontSize: '16px',
-                      fontWeight: '700'
-                    }}>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Información del Producto */}
-                <div style={{ padding: '24px' }}>
-                  <h3 style={{
-                    fontSize: '20px',
-                    fontWeight: '700',
-                    color: colors.text.primary,
-                    margin: '0 0 12px 0',
-                    lineHeight: '1.4'
-                  }}>
-                    {producto.nombre}
-                  </h3>
-                  
-                  <p style={{
-                    fontSize: '14px',
-                    color: colors.text.secondary,
-                    margin: '0 0 20px 0',
-                    lineHeight: '1.6',
-                    height: '42px',
-                    overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: '2',
-                    WebkitBoxOrient: 'vertical'
-                  }}>
-                    {producto.descripcion || 'Delicioso platillo preparado con los mejores ingredientes.'}
-                  </p>
-                  
-                  <button
-                    onClick={() => agregarAlCarrito(producto)}
-                    style={{
-                      width: '100%',
-                      background: colors.secondary,
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '0',
-                      padding: '14px',
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
+                      minWidth: '24px',
+                      height: '24px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '8px'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = colors.accent;
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = colors.secondary;
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <span>Añadir al carrito</span>
-                  </button>
-                </div>
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      padding: '0 6px'
+                    }}>
+                      {carrito.length}
+                    </div>
+                  )}
+                </button>
               </div>
-            ))}
-          </div>
+            </header>
+          )}
 
-          {productosFiltrados.length === 0 && (
+          {/* Header móvil para categoría actual */}
+          {isMobile && (
             <div style={{
-              textAlign: 'center',
-              padding: '80px 20px',
               background: colors.cardBg,
-              borderRadius: '0',
-              border: `1px solid ${colors.border}`,
-              maxWidth: '600px',
-              margin: '0 auto'
+              borderBottom: `1px solid ${colors.border}`,
+              padding: '16px',
+              marginTop: isMobile ? '0' : '0'
             }}>
-              <div style={{
-                fontSize: '48px',
-                marginBottom: '24px',
-                color: colors.gray[300]
+              <h1 style={{
+                fontSize: '22px',
+                fontWeight: '700',
+                color: colors.text.primary,
+                margin: '0 0 4px 0',
+                textAlign: 'center'
               }}>
-                🍽️
-              </div>
-              <h3 style={{ 
-                color: colors.text.primary, 
-                margin: '0 0 12px 0',
-                fontSize: '24px',
-                fontWeight: '700'
-              }}>
-                No hay productos disponibles
-              </h3>
-              <p style={{ 
-                color: colors.text.light, 
+                {categorias.find(c => c.id === categoriaActiva)?.nombre || 'Platos Principales'}
+              </h1>
+              <p style={{
+                fontSize: '14px',
+                color: colors.text.light,
                 margin: 0,
-                fontSize: '16px',
-                lineHeight: '1.6'
+                textAlign: 'center'
               }}>
-                {categoriaActiva === 'todos' 
-                  ? 'Próximamente tendremos nuevos platillos en nuestro menú.' 
-                  : 'Próximamente agregaremos productos en esta categoría.'
-                }
+                {productosFiltrados.length} {productosFiltrados.length === 1 ? 'producto disponible' : 'productos disponibles'}
               </p>
             </div>
           )}
-        </div>
-      </main>
+
+          {/* Contenido de Productos */}
+          <div style={{ 
+            padding: isMobile ? '20px 16px' : '40px 32px',
+            maxWidth: '1400px',
+            margin: '0 auto',
+            width: '100%'
+          }}>
+            {/* Grid de Productos */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: isMobile ? '20px' : '32px'
+            }}>
+              {productosFiltrados.map(producto => (
+                <div key={producto.id} style={{
+                  background: colors.cardBg,
+                  borderRadius: '0',
+                  overflow: 'hidden',
+                  border: `1px solid ${colors.border}`,
+                  transition: isMobile ? 'none' : 'all 0.3s ease',
+                  boxShadow: isMobile ? '0 1px 3px rgba(0, 0, 0, 0.1)' : '0 2px 8px rgba(0, 0, 0, 0.05)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.1)';
+                    e.currentTarget.style.borderColor = colors.secondary;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
+                    e.currentTarget.style.borderColor = colors.border;
+                  }
+                }}>
+                  {/* Imagen del Producto */}
+                  <div style={{
+                    height: isMobile ? '160px' : '200px',
+                    background: `url(${
+                      producto.nombre.toLowerCase().includes('carne asada') 
+                        ? 'https://firebasestorage.googleapis.com/v0/b/sistema-comandas-f9b26.firebasestorage.app/o/Carne-Asada-Beef-PNG-Image.png?alt=media&token=868bfac3-7823-4fd9-83d6-500739852cf2'
+                        : producto.nombre.toLowerCase().includes('pollo asado')
+                        ? 'https://firebasestorage.googleapis.com/v0/b/sistema-comandas-f9b26.firebasestorage.app/o/2172.jpg?alt=media&token=d63713c7-6776-408b-8f55-e90f83b6d79d'
+                        : producto.imagen || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600'
+                    }) center/cover`,
+                    position: 'relative'
+                  }}>
+                    {producto.precio && (
+                      <div style={{
+                        position: 'absolute',
+                        top: isMobile ? '12px' : '16px',
+                        right: isMobile ? '12px' : '16px',
+                        background: colors.secondary,
+                        color: '#ffffff',
+                        padding: isMobile ? '6px 12px' : '8px 16px',
+                        borderRadius: '0',
+                        fontSize: isMobile ? '14px' : '16px',
+                        fontWeight: '700'
+                      }}>
+                        ${producto.precio}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Información del Producto */}
+                  <div style={{ padding: isMobile ? '16px' : '24px' }}>
+                    <h3 style={{
+                      fontSize: isMobile ? '18px' : '20px',
+                      fontWeight: '700',
+                      color: colors.text.primary,
+                      margin: '0 0 8px 0',
+                      lineHeight: '1.4'
+                    }}>
+                      {producto.nombre}
+                    </h3>
+                    
+                    <p style={{
+                      fontSize: isMobile ? '13px' : '14px',
+                      color: colors.text.secondary,
+                      margin: '0 0 16px 0',
+                      lineHeight: '1.6',
+                      height: isMobile ? 'auto' : '42px',
+                      overflow: 'hidden',
+                      display: isMobile ? 'block' : '-webkit-box',
+                      WebkitLineClamp: '2',
+                      WebkitBoxOrient: 'vertical'
+                    }}>
+                      {producto.descripcion || 'Delicioso platillo preparado con los mejores ingredientes.'}
+                    </p>
+                    
+                    <button
+                      onClick={() => agregarAlCarrito(producto)}
+                      style={{
+                        width: '100%',
+                        background: colors.secondary,
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '0',
+                        padding: isMobile ? '12px' : '14px',
+                        fontSize: isMobile ? '14px' : '15px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: isMobile ? 'none' : 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isMobile) {
+                          e.currentTarget.style.background = colors.accent;
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isMobile) {
+                          e.currentTarget.style.background = colors.secondary;
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }
+                      }}
+                    >
+                      <span>Añadir al carrito</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {productosFiltrados.length === 0 && (
+              <div style={{
+                textAlign: 'center',
+                padding: isMobile ? '40px 16px' : '80px 20px',
+                background: colors.cardBg,
+                borderRadius: '0',
+                border: `1px solid ${colors.border}`,
+                maxWidth: '600px',
+                margin: '0 auto'
+              }}>
+                <div style={{
+                  fontSize: isMobile ? '36px' : '48px',
+                  marginBottom: isMobile ? '16px' : '24px',
+                  color: colors.gray[300]
+                }}>
+                  🍽️
+                </div>
+                <h3 style={{ 
+                  color: colors.text.primary, 
+                  margin: '0 0 12px 0',
+                  fontSize: isMobile ? '20px' : '24px',
+                  fontWeight: '700'
+                }}>
+                  No hay productos disponibles
+                </h3>
+                <p style={{ 
+                  color: colors.text.light, 
+                  margin: 0,
+                  fontSize: isMobile ? '14px' : '16px',
+                  lineHeight: '1.6'
+                }}>
+                  {categoriaActiva === 'todos' 
+                    ? 'Próximamente tendremos nuevos platillos en nuestro menú.' 
+                    : 'Próximamente agregaremos productos en esta categoría.'
+                  }
+                </p>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
 
       {/* Botón flotante del carrito en móvil */}
-      {carrito.length > 0 && window.innerWidth < 768 && (
+      {carrito.length > 0 && isMobile && (
         <div style={{
           position: 'fixed',
-          bottom: '24px',
+          bottom: '16px',
           left: '16px',
           right: '16px',
           zIndex: 1000
@@ -609,7 +740,7 @@ const MenuPage = () => {
               color: '#ffffff',
               border: 'none',
               borderRadius: '0',
-              padding: '20px',
+              padding: '16px',
               fontSize: '16px',
               fontWeight: '600',
               cursor: 'pointer',
@@ -617,30 +748,23 @@ const MenuPage = () => {
               justifyContent: 'space-between',
               alignItems: 'center',
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = colors.accent;
-              e.currentTarget.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = colors.secondary;
-              e.currentTarget.style.transform = 'translateY(0)';
+              transition: 'all 0.3s ease',
+              minHeight: '60px'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
                 background: 'rgba(255, 255, 255, 0.2)',
                 borderRadius: '0',
-                padding: '8px 14px',
-                fontSize: '15px',
+                padding: '6px 12px',
+                fontSize: '14px',
                 fontWeight: '700'
               }}>
                 {carrito.length} {carrito.length === 1 ? 'ítem' : 'ítems'}
               </div>
               <span>Ver Carrito</span>
             </div>
-            <div style={{ fontSize: '20px', fontWeight: '700' }}>
+            <div style={{ fontSize: '18px', fontWeight: '700' }}>
               ${totalCarrito.toFixed(2)}
             </div>
           </button>
@@ -648,7 +772,7 @@ const MenuPage = () => {
       )}
 
       {/* Modal Carrito para móvil */}
-      {mostrarCarritoMovil && (
+      {mostrarCarritoMovil && isMobile && (
         <div 
           onClick={() => setMostrarCarritoMovil(false)}
           style={{
@@ -672,33 +796,33 @@ const MenuPage = () => {
               overflowY: 'auto',
               borderTopLeftRadius: '0',
               borderTopRightRadius: '0',
-              padding: '24px'
+              padding: '20px 16px'
             }}
           >
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '24px',
+              marginBottom: '20px',
               paddingBottom: '16px',
               borderBottom: `2px solid ${colors.border}`
             }}>
               <h3 style={{
-                fontSize: '22px',
+                fontSize: '20px',
                 fontWeight: '700',
                 color: colors.text.primary,
                 margin: 0,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px'
+                gap: '8px'
               }}>
                 <span>Tu Carrito</span>
                 {carrito.length > 0 && (
                   <span style={{
                     background: colors.secondary,
                     color: '#ffffff',
-                    fontSize: '14px',
-                    padding: '4px 12px',
+                    fontSize: '13px',
+                    padding: '3px 10px',
                     borderRadius: '0'
                   }}>
                     {carrito.length}
@@ -711,23 +835,14 @@ const MenuPage = () => {
                   background: colors.gray[100],
                   border: 'none',
                   borderRadius: '0',
-                  width: '40px',
-                  height: '40px',
+                  width: '36px',
+                  height: '36px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  fontSize: '20px',
-                  color: colors.text.secondary,
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = colors.secondary;
-                  e.currentTarget.style.color = '#ffffff';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = colors.gray[100];
-                  e.currentTarget.style.color = colors.text.secondary;
+                  fontSize: '18px',
+                  color: colors.text.secondary
                 }}
               >
                 ×
@@ -735,7 +850,12 @@ const MenuPage = () => {
             </div>
             
             {/* Componente Carrito */}
-            <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '8px' }}>
+            <div style={{ 
+              maxHeight: 'calc(85vh - 120px)', 
+              overflowY: 'auto', 
+              paddingRight: '4px',
+              marginBottom: '16px'
+            }}>
               <Carrito
                 carrito={carrito}
                 onActualizarCantidad={actualizarCantidad}

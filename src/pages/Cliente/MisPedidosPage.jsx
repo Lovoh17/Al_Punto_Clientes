@@ -2,25 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { pedidoService } from '../../services/api';
 import { useAuth } from '../../AuthContext';
 
-
 const colors = {
-  primary: '#2c5aa0',
-  primaryLight: '#3a6bc5',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  info: '#3b82f6',
+  primary: '#E74C3C',
+  primaryLight: '#333333',
+  secondary: '#E74C3C',
+  accent: '#FF6B5B',
+  background: '#FFFFFF',
+  cardBg: '#FFFFFF',
+  text: {
+    primary: '#000000',
+    secondary: '#333333',
+    light: '#666666'
+  },
+  border: '#E0E0E0',
+  success: '#689F38',
+  warning: '#FF9800',
+  danger: '#D32F2F',
+  info: '#1976D2',
   gray: {
-    50: '#f9fafb',
-    100: '#f3f4f6',
-    200: '#e5e7eb',
-    300: '#d1d5db',
-    400: '#9ca3af',
-    500: '#6b7280',
-    600: '#4b5563',
-    700: '#374151',
-    800: '#1f2937',
-    900: '#111827'
+    50: '#F9F9F9',
+    100: '#F5F5F5',
+    200: '#EEEEEE',
+    300: '#E0E0E0',
+    400: '#BDBDBD',
+    500: '#9E9E9E',
+    600: '#757575',
+    700: '#616161',
+    800: '#424242',
+    900: '#212121'
   }
 };
 
@@ -31,6 +40,16 @@ const MisPedidosPage = () => {
   const [error, setError] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (user && user.id) {
@@ -51,11 +70,9 @@ const MisPedidosPage = () => {
 
       console.log('Cargando pedidos para usuario ID:', user.id);
       
-      // Usar el endpoint específico para obtener pedidos del cliente
       const response = await pedidoService.getByCliente(user.id);
       
       console.log('Respuesta de API:', response);
-      
       
       const pedidosData = response.data?.data || response.data || [];
       console.log('Datos de pedidos:', pedidosData);
@@ -69,21 +86,6 @@ const MisPedidosPage = () => {
       setLoading(false);
     }
   };
-
-  // También necesitarás actualizar tu servicio de API para agregar este método
-  // Si no lo tienes, agrégalo así:
-  /*
-  // En services/api.js
-  export const pedidoService = {
-    getAll: () => api.get('/Pedidos'),
-    getById: (id) => api.get(`/Pedidos/${id}`),
-    getByCliente: (usuarioId) => api.get(`/Pedidos/cliente/${usuarioId}`), // <-- Agregar esto
-    create: (pedido) => api.post('/Pedidos', pedido),
-    update: (id, pedido) => api.put(`/Pedidos/${id}`, pedido),
-    cancelar: (id) => api.patch(`/Pedidos/${id}/cancelar`),
-    delete: (id) => api.delete(`/Pedidos/${id}`),
-  };
-  */
 
   const handleCancelarPedido = async (pedidoId) => {
     if (!window.confirm('¿Estás seguro de que deseas cancelar este pedido?')) {
@@ -107,9 +109,9 @@ const MisPedidosPage = () => {
   const getEstadoColor = (estado) => {
     const colores = {
       pendiente: colors.warning,
-      en_preparacion: colors.info,
+      en_preparacion: colors.secondary,
       listo: colors.success,
-      entregado: colors.gray[600],
+      entregado: colors.primaryLight,
       cancelado: colors.danger
     };
     return colores[estado] || colors.gray[500];
@@ -147,20 +149,20 @@ const MisPedidosPage = () => {
         justifyContent: 'center',
         minHeight: '100vh',
         padding: '24px',
-        background: colors.gray[50]
+        background: colors.background
       }}>
         <div style={{ fontSize: '64px', marginBottom: '16px' }}>🔒</div>
         <h3 style={{ 
           fontSize: '24px', 
           fontWeight: '700', 
-          color: colors.gray[900],
+          color: colors.text.primary,
           marginBottom: '8px'
         }}>
           Acceso requerido
         </h3>
         <p style={{ 
           fontSize: '16px', 
-          color: colors.gray[600],
+          color: colors.text.light,
           marginBottom: '24px',
           textAlign: 'center'
         }}>
@@ -216,24 +218,48 @@ const MisPedidosPage = () => {
             Bienvenido, {user.nombre || 'Cliente'} - Historial y seguimiento de tus pedidos
           </p>
         </div>
-        <div style={styles.statsCard}>
-          <div style={styles.statItem}>
-            <div style={styles.statValue}>{pedidos.length}</div>
-            <div style={styles.statLabel}>Total</div>
+        {!isMobile && (
+          <div style={styles.statsCard}>
+            <div style={styles.statItem}>
+              <div style={styles.statValue}>{pedidos.length}</div>
+              <div style={styles.statLabel}>Total</div>
+            </div>
+            <div style={styles.dividerVertical} />
+            <div style={styles.statItem}>
+              <div style={styles.statValue}>
+                {pedidos.filter(p => p.estado === 'entregado').length}
+              </div>
+              <div style={styles.statLabel}>Completados</div>
+            </div>
           </div>
-          <div style={styles.dividerVertical} />
-          <div style={styles.statItem}>
-            <div style={styles.statValue}>
+        )}
+      </div>
+
+      {/* Mobile Stats */}
+      {isMobile && (
+        <div style={styles.mobileStats}>
+          <div style={styles.mobileStatItem}>
+            <div style={styles.mobileStatValue}>{pedidos.length}</div>
+            <div style={styles.mobileStatLabel}>Total</div>
+          </div>
+          <div style={styles.mobileStatDivider} />
+          <div style={styles.mobileStatItem}>
+            <div style={styles.mobileStatValue}>
               {pedidos.filter(p => p.estado === 'entregado').length}
             </div>
-            <div style={styles.statLabel}>Completados</div>
+            <div style={styles.mobileStatLabel}>Completados</div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Filtros */}
       <div style={styles.filterBar}>
-        <div style={styles.filterButtons}>
+        <div style={{
+          ...styles.filterButtons,
+          overflowX: isMobile ? 'auto' : 'visible',
+          paddingBottom: isMobile ? '8px' : '0',
+          WebkitOverflowScrolling: 'touch'
+        }}>
           {[
             { key: 'todos', label: 'Todos', count: pedidos.length },
             { key: 'pendiente', label: 'Pendientes', count: pedidos.filter(p => p.estado === 'pendiente').length },
@@ -246,11 +272,16 @@ const MisPedidosPage = () => {
               onClick={() => setFiltroEstado(filtro.key)}
               style={{
                 ...styles.filterButton,
-                ...(filtroEstado === filtro.key ? styles.filterButtonActive : {})
+                ...(filtroEstado === filtro.key ? styles.filterButtonActive : {}),
+                flexShrink: isMobile ? 0 : 1,
+                whiteSpace: 'nowrap'
               }}
             >
               {filtro.label}
-              <span style={styles.filterBadge}>{filtro.count}</span>
+              <span style={{
+                ...styles.filterBadge,
+                backgroundColor: filtroEstado === filtro.key ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
+              }}>{filtro.count}</span>
             </button>
           ))}
         </div>
@@ -268,14 +299,17 @@ const MisPedidosPage = () => {
             }
           </p>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => window.location.href = '/cliente/menu'}
             style={styles.btnNuevoPedido}
           >
             Hacer mi primer pedido
           </button>
         </div>
       ) : (
-        <div style={styles.pedidosGrid}>
+        <div style={{
+          ...styles.pedidosGrid,
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(350px, 1fr))'
+        }}>
           {pedidosFiltrados.map(pedido => (
             <div key={pedido.id || pedido._id} style={styles.pedidoCard}>
               {/* Header del pedido */}
@@ -296,9 +330,9 @@ const MisPedidosPage = () => {
                 </div>
                 <div style={{
                   ...styles.estadoBadge,
-                  backgroundColor: getEstadoColor(pedido.estado) + '15',
+                  backgroundColor: getEstadoColor(pedido.estado) + '10',
                   color: getEstadoColor(pedido.estado),
-                  borderColor: getEstadoColor(pedido.estado)
+                  borderColor: getEstadoColor(pedido.estado) + '40'
                 }}>
                   <span style={styles.estadoIcono}>
                     {getEstadoIcono(pedido.estado)}
@@ -337,17 +371,27 @@ const MisPedidosPage = () => {
                     ${parseFloat(pedido.total || 0).toFixed(2)}
                   </span>
                 </div>
-                <div style={styles.pedidoActions}>
+                <div style={{
+                  ...styles.pedidoActions,
+                  flexDirection: isMobile ? 'column' : 'row'
+                }}>
                   <button
                     onClick={() => setPedidoSeleccionado(pedido)}
-                    style={styles.btnVer}
+                    style={{
+                      ...styles.btnVer,
+                      width: isMobile ? '100%' : 'auto',
+                      marginBottom: isMobile ? '8px' : '0'
+                    }}
                   >
                     Ver Detalle
                   </button>
                   {(pedido.estado === 'pendiente' || pedido.estado === 'en_preparacion') && (
                     <button
                       onClick={() => handleCancelarPedido(pedido.id || pedido._id)}
-                      style={styles.btnCancelar}
+                      style={{
+                        ...styles.btnCancelar,
+                        width: isMobile ? '100%' : 'auto'
+                      }}
                     >
                       Cancelar
                     </button>
@@ -362,7 +406,12 @@ const MisPedidosPage = () => {
       {/* Modal de detalle */}
       {pedidoSeleccionado && (
         <div style={styles.modalOverlay} onClick={() => setPedidoSeleccionado(null)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div style={{
+            ...styles.modal,
+            width: isMobile ? 'calc(100% - 32px)' : '600px',
+            margin: isMobile ? '16px' : '0',
+            maxHeight: isMobile ? 'calc(100vh - 64px)' : '90vh'
+          }} onClick={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>
                 Detalle del Pedido #{pedidoSeleccionado.numero_pedido}
@@ -380,9 +429,9 @@ const MisPedidosPage = () => {
                 <h4 style={styles.modalSectionTitle}>Estado</h4>
                 <div style={{
                   ...styles.estadoBadge,
-                  backgroundColor: getEstadoColor(pedidoSeleccionado.estado) + '15',
+                  backgroundColor: getEstadoColor(pedidoSeleccionado.estado) + '10',
                   color: getEstadoColor(pedidoSeleccionado.estado),
-                  borderColor: getEstadoColor(pedidoSeleccionado.estado),
+                  borderColor: getEstadoColor(pedidoSeleccionado.estado) + '40',
                   display: 'inline-flex'
                 }}>
                   <span style={styles.estadoIcono}>
@@ -450,7 +499,7 @@ const styles = {
     padding: '24px',
     maxWidth: '1400px',
     margin: '0 auto',
-    backgroundColor: colors.gray[50],
+    backgroundColor: colors.background,
     minHeight: '100vh'
   },
   loadingContainer: {
@@ -464,12 +513,12 @@ const styles = {
   spinner: {
     width: '48px',
     height: '48px',
-    border: `4px solid ${colors.gray[200]}`,
+    border: `4px solid ${colors.border}`,
     borderTopColor: colors.primary,
     animation: 'spin 0.8s linear infinite'
   },
   loadingText: {
-    color: colors.gray[600],
+    color: colors.text.light,
     fontSize: '16px',
     fontWeight: '500'
   },
@@ -488,12 +537,12 @@ const styles = {
   errorTitle: {
     fontSize: '24px',
     fontWeight: '700',
-    color: colors.gray[900],
+    color: colors.text.primary,
     marginBottom: '8px'
   },
   errorText: {
     fontSize: '16px',
-    color: colors.gray[600],
+    color: colors.text.light,
     marginBottom: '24px'
   },
   retryButton: {
@@ -514,20 +563,20 @@ const styles = {
     gap: '16px'
   },
   title: {
-    fontSize: '32px',
-    fontWeight: '800',
-    color: colors.gray[900],
+    fontSize: '28px',
+    fontWeight: '700',
+    color: colors.text.primary,
     margin: 0
   },
   subtitle: {
     fontSize: '14px',
-    color: colors.gray[600],
+    color: colors.text.light,
     margin: '4px 0 0 0',
     fontWeight: '500'
   },
   statsCard: {
-    background: '#ffffff',
-    border: `2px solid ${colors.gray[200]}`,
+    background: colors.cardBg,
+    border: `1px solid ${colors.border}`,
     padding: '16px 24px',
     display: 'flex',
     gap: '24px',
@@ -538,12 +587,12 @@ const styles = {
   },
   statValue: {
     fontSize: '24px',
-    fontWeight: '800',
-    color: colors.gray[900]
+    fontWeight: '700',
+    color: colors.text.primary
   },
   statLabel: {
     fontSize: '12px',
-    color: colors.gray[600],
+    color: colors.text.light,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
@@ -552,23 +601,52 @@ const styles = {
   dividerVertical: {
     width: '1px',
     height: '40px',
-    background: colors.gray[200]
+    background: colors.border
+  },
+  mobileStats: {
+    background: colors.cardBg,
+    border: `1px solid ${colors.border}`,
+    padding: '16px',
+    marginBottom: '24px',
+    display: 'flex',
+    justifyContent: 'space-around',
+    alignItems: 'center'
+  },
+  mobileStatItem: {
+    textAlign: 'center'
+  },
+  mobileStatValue: {
+    fontSize: '20px',
+    fontWeight: '700',
+    color: colors.text.primary
+  },
+  mobileStatLabel: {
+    fontSize: '11px',
+    color: colors.text.light,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginTop: '4px'
+  },
+  mobileStatDivider: {
+    width: '1px',
+    height: '32px',
+    background: colors.border
   },
   filterBar: {
-    background: '#ffffff',
-    border: `2px solid ${colors.gray[200]}`,
+    background: colors.cardBg,
+    border: `1px solid ${colors.border}`,
     padding: '16px',
     marginBottom: '32px'
   },
   filterButtons: {
     display: 'flex',
-    gap: '8px',
-    flexWrap: 'wrap'
+    gap: '8px'
   },
   filterButton: {
     background: colors.gray[100],
-    color: colors.gray[700],
-    border: `2px solid ${colors.gray[200]}`,
+    color: colors.text.secondary,
+    border: `1px solid ${colors.border}`,
     padding: '10px 16px',
     fontSize: '14px',
     fontWeight: '600',
@@ -584,7 +662,6 @@ const styles = {
     borderColor: colors.primary
   },
   filterBadge: {
-    background: 'rgba(0, 0, 0, 0.1)',
     padding: '2px 8px',
     fontSize: '12px',
     fontWeight: '700'
@@ -592,8 +669,8 @@ const styles = {
   emptyState: {
     textAlign: 'center',
     padding: '64px 24px',
-    background: '#ffffff',
-    border: `2px solid ${colors.gray[200]}`
+    background: colors.cardBg,
+    border: `1px solid ${colors.border}`
   },
   emptyIcon: {
     fontSize: '64px',
@@ -602,12 +679,12 @@ const styles = {
   emptyTitle: {
     fontSize: '20px',
     fontWeight: '700',
-    color: colors.gray[900],
+    color: colors.text.primary,
     marginBottom: '8px'
   },
   emptyText: {
     fontSize: '14px',
-    color: colors.gray[600],
+    color: colors.text.light,
     marginBottom: '24px'
   },
   btnNuevoPedido: {
@@ -621,17 +698,15 @@ const styles = {
   },
   pedidosGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
     gap: '24px'
   },
   pedidoCard: {
-    background: '#ffffff',
-    border: `2px solid ${colors.gray[200]}`,
-    transition: 'all 0.2s ease'
+    background: colors.cardBg,
+    border: `1px solid ${colors.border}`
   },
   pedidoHeader: {
     padding: '16px',
-    borderBottom: `2px solid ${colors.gray[200]}`,
+    borderBottom: `1px solid ${colors.border}`,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -640,20 +715,20 @@ const styles = {
   pedidoHeaderLeft: {},
   pedidoNumero: {
     fontSize: '18px',
-    fontWeight: '800',
-    color: colors.gray[900],
+    fontWeight: '700',
+    color: colors.text.primary,
     marginBottom: '4px'
   },
   pedidoFecha: {
     fontSize: '12px',
-    color: colors.gray[600],
+    color: colors.text.light,
     fontWeight: '500'
   },
   estadoBadge: {
     padding: '6px 12px',
     fontSize: '12px',
     fontWeight: '700',
-    border: '2px solid',
+    border: `1px solid`,
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
     display: 'flex',
@@ -671,23 +746,23 @@ const styles = {
     justifyContent: 'space-between',
     marginBottom: '8px',
     paddingBottom: '8px',
-    borderBottom: `1px solid ${colors.gray[200]}`
+    borderBottom: `1px solid ${colors.border}`
   },
   infoLabel: {
     fontSize: '13px',
-    color: colors.gray[600],
+    color: colors.text.light,
     fontWeight: '600'
   },
   infoValue: {
     fontSize: '13px',
-    color: colors.gray[900],
+    color: colors.text.primary,
     fontWeight: '600',
     textAlign: 'right',
     maxWidth: '60%'
   },
   pedidoFooter: {
     padding: '16px',
-    borderTop: `2px solid ${colors.gray[200]}`,
+    borderTop: `1px solid ${colors.border}`,
     background: colors.gray[50]
   },
   totalContainer: {
@@ -699,14 +774,14 @@ const styles = {
   totalLabel: {
     fontSize: '14px',
     fontWeight: '600',
-    color: colors.gray[600],
+    color: colors.text.light,
     textTransform: 'uppercase',
     letterSpacing: '0.5px'
   },
   totalValue: {
     fontSize: '24px',
-    fontWeight: '800',
-    color: colors.gray[900]
+    fontWeight: '700',
+    color: colors.text.primary
   },
   pedidoActions: {
     display: 'flex',
@@ -716,7 +791,7 @@ const styles = {
     background: colors.primary,
     color: 'white',
     border: 'none',
-    padding: '10px 16px',
+    padding: '12px',
     fontSize: '13px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -728,7 +803,7 @@ const styles = {
     background: colors.danger,
     color: 'white',
     border: 'none',
-    padding: '10px 16px',
+    padding: '12px',
     fontSize: '13px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -747,19 +822,19 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,
-    padding: '24px'
+    padding: '16px'
   },
   modal: {
-    background: '#ffffff',
-    border: `2px solid ${colors.gray[200]}`,
+    background: colors.cardBg,
+    border: `1px solid ${colors.border}`,
     maxWidth: '600px',
     width: '100%',
     maxHeight: '90vh',
     overflowY: 'auto'
   },
   modalHeader: {
-    padding: '24px',
-    borderBottom: `2px solid ${colors.gray[200]}`,
+    padding: '20px',
+    borderBottom: `1px solid ${colors.border}`,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -768,35 +843,35 @@ const styles = {
   modalTitle: {
     fontSize: '20px',
     fontWeight: '700',
-    color: colors.gray[900],
+    color: colors.text.primary,
     margin: 0
   },
   modalClose: {
     background: 'none',
     border: 'none',
     fontSize: '24px',
-    color: colors.gray[600],
+    color: colors.text.light,
     cursor: 'pointer',
     padding: '4px',
     lineHeight: 1
   },
   modalBody: {
-    padding: '24px'
+    padding: '20px'
   },
   modalSection: {
-    marginBottom: '24px'
+    marginBottom: '20px'
   },
   modalSectionTitle: {
     fontSize: '14px',
     fontWeight: '700',
-    color: colors.gray[700],
+    color: colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
     marginBottom: '12px'
   },
   modalInfo: {
     background: colors.gray[50],
-    border: `1px solid ${colors.gray[200]}`,
+    border: `1px solid ${colors.border}`,
     padding: '16px'
   },
   modalInfoRow: {
@@ -804,36 +879,36 @@ const styles = {
     justifyContent: 'space-between',
     marginBottom: '12px',
     paddingBottom: '12px',
-    borderBottom: `1px solid ${colors.gray[200]}`
+    borderBottom: `1px solid ${colors.border}`
   },
   modalInfoLabel: {
     fontSize: '14px',
-    color: colors.gray[600],
+    color: colors.text.light,
     fontWeight: '600'
   },
   modalInfoValue: {
     fontSize: '14px',
-    color: colors.gray[900],
+    color: colors.text.primary,
     fontWeight: '600',
     textAlign: 'right'
   },
   modalTotal: {
-    fontSize: '32px',
-    fontWeight: '800',
+    fontSize: '28px',
+    fontWeight: '700',
     color: colors.primary,
     textAlign: 'center',
     padding: '16px',
     background: colors.gray[50],
-    border: `2px solid ${colors.gray[200]}`
+    border: `1px solid ${colors.border}`
   },
   modalFooter: {
-    padding: '16px 24px',
-    borderTop: `2px solid ${colors.gray[200]}`,
+    padding: '16px 20px',
+    borderTop: `1px solid ${colors.border}`,
     background: colors.gray[50]
   },
   modalBtnClose: {
     background: colors.gray[300],
-    color: colors.gray[900],
+    color: colors.text.primary,
     border: 'none',
     padding: '12px 24px',
     fontSize: '14px',

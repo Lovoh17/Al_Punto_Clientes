@@ -16,28 +16,31 @@ import {
   FaHistory,
   FaClipboardCheck,
   FaCheckCircle,
-  FaUserShield
+  FaUserShield,
+  FaBars,
+  FaArrowLeft
 } from 'react-icons/fa';
 
-// Paleta de colores
+// Paleta de colores minimalista
 const colors = {
-  primary: '#2c5aa0',
-  primaryLight: '#3a6bc5',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  info: '#3b82f6',
+  primary: '#000000',
+  primaryLight: '#333333',
+  secondary: '#E74C3C',
+  success: '#689F38',
+  warning: '#FF9800',
+  danger: '#D32F2F',
+  info: '#1976D2',
   gray: {
-    50: '#f9fafb',
-    100: '#f3f4f6',
-    200: '#e5e7eb',
-    300: '#d1d5db',
-    400: '#9ca3af',
-    500: '#6b7280',
-    600: '#4b5563',
-    700: '#374151',
-    800: '#1f2937',
-    900: '#111827'
+    50: '#FAFAFA',
+    100: '#F5F5F5',
+    200: '#EEEEEE',
+    300: '#E0E0E0',
+    400: '#BDBDBD',
+    500: '#9E9E9E',
+    600: '#757575',
+    700: '#616161',
+    800: '#424242',
+    900: '#212121'
   }
 };
 
@@ -52,6 +55,8 @@ const PerfilPage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   // Estados para formularios
   const [editMode, setEditMode] = useState(false);
@@ -91,6 +96,20 @@ const PerfilPage = () => {
     entregados: 0,
     cancelados: 0
   });
+
+  // Detectar cambios en el tamaño de la ventana
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setShowMobileMenu(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -272,8 +291,6 @@ const PerfilPage = () => {
       setSuccess(null);
       
       // Llamar al endpoint para cambiar contraseña
-      // NOTA: Asumo que tu API tiene un endpoint para esto
-      // Si no lo tienes, necesitarías agregarlo
       const response = await fetch('https://backend-alpunto-production.up.railway.app/api/usuarios/cambiar-password', {
         method: 'POST',
         headers: {
@@ -383,26 +400,46 @@ const PerfilPage = () => {
     return (
       <div style={styles.loadingContainer}>
         <div style={styles.loadingSpinner}></div>
-        <div>Cargando perfil...</div>
+        <div style={styles.loadingText}>Cargando perfil...</div>
       </div>
     );
   }
 
   return (
     <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Mi Perfil</h1>
-          <p style={styles.subtitle}>Administra tu información personal y preferencias</p>
+      {/* Header Móvil */}
+      {isMobile && (
+        <header style={styles.mobileHeader}>
+          <div style={styles.mobileHeaderLeft}>
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              style={styles.mobileMenuButton}
+            >
+              {showMobileMenu ? <FaArrowLeft /> : <FaBars />}
+            </button>
+          </div>
+          <div style={styles.mobileHeaderCenter}>
+            <h1 style={styles.mobileTitle}>Mi Perfil</h1>
+          </div>
+          <div style={styles.mobileHeaderRight} />
+        </header>
+      )}
+
+      {/* Header Desktop */}
+      {!isMobile && (
+        <div style={styles.header}>
+          <div>
+            <h1 style={styles.title}>Mi Perfil</h1>
+            <p style={styles.subtitle}>Administra tu información personal y preferencias</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Mensajes de error/success */}
       {error && (
         <div style={styles.messageError}>
           <div style={styles.messageContent}>
-            <span>{error}</span>
+            <span style={styles.messageText}>{error}</span>
             <button onClick={() => setError(null)} style={styles.messageClose}>
               ×
             </button>
@@ -413,7 +450,7 @@ const PerfilPage = () => {
       {success && (
         <div style={styles.messageSuccess}>
           <div style={styles.messageContent}>
-            <span>{success}</span>
+            <span style={styles.messageText}>{success}</span>
             <button onClick={() => setSuccess(null)} style={styles.messageClose}>
               ×
             </button>
@@ -422,7 +459,11 @@ const PerfilPage = () => {
       )}
 
       {/* Contenido principal */}
-      <div style={styles.contentGrid}>
+      <div style={{
+        ...styles.contentGrid,
+        gridTemplateColumns: isMobile ? '1fr' : '1fr 380px',
+        gap: isMobile ? '16px' : '24px'
+      }}>
         {/* Columna izquierda: Información del perfil */}
         <div style={styles.leftColumn}>
           {/* Tarjeta de información */}
@@ -434,8 +475,8 @@ const PerfilPage = () => {
                   onClick={() => setEditMode(true)}
                   style={styles.editButton}
                 >
-                  <FaEdit style={{ marginRight: 8 }} />
-                  Editar
+                  <FaEdit style={styles.buttonIcon} />
+                  {!isMobile && 'Editar'}
                 </button>
               )}
             </div>
@@ -488,22 +529,32 @@ const PerfilPage = () => {
                   />
                 </div>
                 
-                <div style={styles.formActions}>
+                <div style={{
+                  ...styles.formActions,
+                  flexDirection: isMobile ? 'column' : 'row'
+                }}>
                   <button
                     type="button"
                     onClick={cancelarEdicion}
                     disabled={saving}
-                    style={styles.cancelButton}
+                    style={{
+                      ...styles.cancelButton,
+                      width: isMobile ? '100%' : 'auto',
+                      marginBottom: isMobile ? '8px' : '0'
+                    }}
                   >
-                    <FaTimes style={{ marginRight: 8 }} />
+                    <FaTimes style={styles.buttonIcon} />
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    style={styles.saveButton}
+                    style={{
+                      ...styles.saveButton,
+                      width: isMobile ? '100%' : 'auto'
+                    }}
                   >
-                    <FaSave style={{ marginRight: 8 }} />
+                    <FaSave style={styles.buttonIcon} />
                     {saving ? 'Guardando...' : 'Guardar Cambios'}
                   </button>
                 </div>
@@ -578,8 +629,8 @@ const PerfilPage = () => {
                   onClick={() => setChangePasswordMode(true)}
                   style={styles.editButton}
                 >
-                  <FaKey style={{ marginRight: 8 }} />
-                  Cambiar Contraseña
+                  <FaKey style={styles.buttonIcon} />
+                  {!isMobile && 'Cambiar Contraseña'}
                 </button>
               )}
             </div>
@@ -623,22 +674,32 @@ const PerfilPage = () => {
                   />
                 </div>
                 
-                <div style={styles.formActions}>
+                <div style={{
+                  ...styles.formActions,
+                  flexDirection: isMobile ? 'column' : 'row'
+                }}>
                   <button
                     type="button"
                     onClick={cancelarCambioPassword}
                     disabled={saving}
-                    style={styles.cancelButton}
+                    style={{
+                      ...styles.cancelButton,
+                      width: isMobile ? '100%' : 'auto',
+                      marginBottom: isMobile ? '8px' : '0'
+                    }}
                   >
-                    <FaTimes style={{ marginRight: 8 }} />
+                    <FaTimes style={styles.buttonIcon} />
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    style={styles.saveButton}
+                    style={{
+                      ...styles.saveButton,
+                      width: isMobile ? '100%' : 'auto'
+                    }}
                   >
-                    <FaLock style={{ marginRight: 8 }} />
+                    <FaLock style={styles.buttonIcon} />
                     {saving ? 'Cambiando...' : 'Cambiar Contraseña'}
                   </button>
                 </div>
@@ -646,7 +707,7 @@ const PerfilPage = () => {
             ) : (
               <div style={styles.cardContent}>
                 <div style={styles.securityInfo}>
-                  <FaKey style={{ fontSize: 48, color: colors.gray[300], marginBottom: 16 }} />
+                  <FaKey style={styles.securityIcon} />
                   <p style={styles.securityText}>
                     Protege tu cuenta con una contraseña segura
                   </p>
@@ -659,8 +720,8 @@ const PerfilPage = () => {
           </div>
         </div>
 
-        {/* Columna derecha: Pedidos y estadísticas */}
-        <div style={styles.rightColumn}>
+        {/* Columna derecha: Pedidos y estadísticas - En móvil se muestra después del contenido principal */}
+        <div style={isMobile && showMobileMenu ? { display: 'none' } : styles.rightColumn}>
           {/* Estadísticas de pedidos */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
@@ -670,12 +731,16 @@ const PerfilPage = () => {
                   onClick={() => navigate('/pedidos/cliente')}
                   style={styles.viewAllButton}
                 >
-                  Ver Todos
+                  {isMobile ? 'Ver Todos' : 'Ver Todos'}
                 </button>
               )}
             </div>
             <div style={styles.cardContent}>
-              <div style={styles.statsGrid}>
+              <div style={{
+                ...styles.statsGrid,
+                gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(3, 1fr)',
+                gap: isMobile ? '8px' : '16px'
+              }}>
                 <div style={styles.statCard}>
                   <div style={styles.statIcon}>
                     <FaClipboardCheck />
@@ -748,7 +813,8 @@ const PerfilPage = () => {
                       <div style={styles.orderStatus}>
                         <span style={{
                           ...styles.statusBadge,
-                          backgroundColor: getEstadoColor(pedido.estado) + '20',
+                          backgroundColor: getEstadoColor(pedido.estado) + '10',
+                          borderColor: getEstadoColor(pedido.estado) + '40',
                           color: getEstadoColor(pedido.estado)
                         }}>
                           {formatEstado(pedido.estado)}
@@ -782,7 +848,8 @@ const PerfilPage = () => {
                   <div style={styles.accountValue}>
                     <span style={{
                       ...styles.statusBadge,
-                      backgroundColor: user?.activo ? colors.success + '20' : colors.danger + '20',
+                      backgroundColor: user?.activo ? colors.success + '10' : colors.danger + '10',
+                      borderColor: user?.activo ? colors.success + '40' : colors.danger + '40',
                       color: user?.activo ? colors.success : colors.danger
                     }}>
                       {user?.activo ? 'Activa' : 'Inactiva'}
@@ -805,10 +872,9 @@ const PerfilPage = () => {
   );
 };
 
-// Los estilos permanecen iguales...
+// Estilos minimalistas sin bordes redondeados, sombras ni gradientes
 const styles = {
   container: {
-    padding: '24px',
     backgroundColor: colors.gray[50],
     minHeight: '100vh'
   },
@@ -823,19 +889,63 @@ const styles = {
   loadingSpinner: {
     width: '40px',
     height: '40px',
-    border: `3px solid ${colors.gray[200]}`,
+    border: `2px solid ${colors.gray[300]}`,
     borderTopColor: colors.primary,
-    borderRadius: '50%',
     animation: 'spin 1s linear infinite'
   },
+  loadingText: {
+    fontSize: '14px',
+    color: colors.gray[600]
+  },
+  mobileHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    borderBottom: `1px solid ${colors.gray[200]}`,
+    padding: '16px',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1000
+  },
+  mobileHeaderLeft: {
+    width: '40px'
+  },
+  mobileHeaderCenter: {
+    flex: 1,
+    textAlign: 'center'
+  },
+  mobileHeaderRight: {
+    width: '40px'
+  },
+  mobileMenuButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '20px',
+    color: colors.gray[800],
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '40px',
+    height: '40px'
+  },
+  mobileTitle: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: colors.gray[900],
+    margin: 0
+  },
   header: {
+    padding: '24px',
     marginBottom: '32px'
   },
   title: {
     fontSize: '28px',
     fontWeight: '700',
     color: colors.gray[900],
-    margin: '0 0 8px 0'
+    margin: '0 0 8px 0',
+    letterSpacing: '-0.5px'
   },
   subtitle: {
     fontSize: '14px',
@@ -843,23 +953,28 @@ const styles = {
     margin: 0
   },
   messageError: {
-    backgroundColor: colors.danger + '10',
-    border: `1px solid ${colors.danger}30`,
+    backgroundColor: colors.danger + '08',
+    border: `1px solid ${colors.danger}20`,
     color: colors.danger,
     padding: '16px',
-    marginBottom: '24px'
+    margin: '0 16px 16px',
+    marginTop: '16px'
   },
   messageSuccess: {
-    backgroundColor: colors.success + '10',
-    border: `1px solid ${colors.success}30`,
+    backgroundColor: colors.success + '08',
+    border: `1px solid ${colors.success}20`,
     color: colors.success,
     padding: '16px',
-    marginBottom: '24px'
+    margin: '0 16px 16px',
+    marginTop: '16px'
   },
   messageContent: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center'
+  },
+  messageText: {
+    fontSize: '14px'
   },
   messageClose: {
     background: 'none',
@@ -868,27 +983,31 @@ const styles = {
     fontSize: '20px',
     cursor: 'pointer',
     padding: 0,
-    lineHeight: 1
+    lineHeight: 1,
+    opacity: 0.7,
+    ':hover': {
+      opacity: 1
+    }
   },
   contentGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 380px',
-    gap: '24px'
+    padding: '16px',
+    maxWidth: '1400px',
+    margin: '0 auto'
   },
   leftColumn: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '24px'
+    gap: '16px'
   },
   rightColumn: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '24px'
+    gap: '16px'
   },
   card: {
     backgroundColor: '#ffffff',
-    border: `1px solid ${colors.gray[200]}`,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+    border: `1px solid ${colors.gray[200]}`
   },
   cardHeader: {
     padding: '20px',
@@ -898,7 +1017,7 @@ const styles = {
     alignItems: 'center'
   },
   cardTitle: {
-    fontSize: '18px',
+    fontSize: '16px',
     fontWeight: '600',
     color: colors.gray[900],
     margin: 0
@@ -906,19 +1025,22 @@ const styles = {
   cardContent: {
     padding: '20px'
   },
+  buttonIcon: {
+    marginRight: '8px'
+  },
   editButton: {
     display: 'flex',
     alignItems: 'center',
-    padding: '8px 16px',
-    backgroundColor: colors.gray[100],
+    padding: '8px 12px',
+    backgroundColor: 'transparent',
     color: colors.gray[700],
     border: `1px solid ${colors.gray[300]}`,
-    fontSize: '14px',
+    fontSize: '12px',
     fontWeight: '500',
     cursor: 'pointer',
     transition: 'all 0.2s',
     ':hover': {
-      backgroundColor: colors.gray[200]
+      backgroundColor: colors.gray[100]
     }
   },
   form: {
@@ -929,29 +1051,37 @@ const styles = {
   },
   label: {
     display: 'block',
-    marginBottom: '8px',
-    fontSize: '14px',
+    marginBottom: '6px',
+    fontSize: '12px',
     fontWeight: '500',
-    color: colors.gray[700]
+    color: colors.gray[700],
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
   },
   input: {
     width: '100%',
-    padding: '10px 12px',
+    padding: '12px',
     border: `1px solid ${colors.gray[300]}`,
     fontSize: '14px',
+    backgroundColor: colors.gray[50],
+    color: colors.gray[900],
     outline: 'none',
+    transition: 'border-color 0.2s',
     ':focus': {
       borderColor: colors.primary
     }
   },
   textarea: {
     width: '100%',
-    padding: '10px 12px',
+    padding: '12px',
     border: `1px solid ${colors.gray[300]}`,
     fontSize: '14px',
+    backgroundColor: colors.gray[50],
+    color: colors.gray[900],
     outline: 'none',
     resize: 'vertical',
     minHeight: '80px',
+    transition: 'border-color 0.2s',
     ':focus': {
       borderColor: colors.primary
     }
@@ -959,145 +1089,171 @@ const styles = {
   formActions: {
     display: 'flex',
     gap: '12px',
-    marginTop: '24px'
+    marginTop: '20px'
   },
   cancelButton: {
-    padding: '10px 20px',
-    backgroundColor: colors.gray[200],
+    padding: '12px 20px',
+    backgroundColor: colors.gray[100],
     color: colors.gray[700],
-    border: 'none',
-    fontSize: '14px',
+    border: `1px solid ${colors.gray[300]}`,
+    fontSize: '13px',
     fontWeight: '500',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s',
     ':hover': {
-      backgroundColor: colors.gray[300]
+      backgroundColor: colors.gray[200]
+    },
+    ':disabled': {
+      opacity: 0.5,
+      cursor: 'not-allowed'
     }
   },
   saveButton: {
-    padding: '10px 20px',
+    padding: '12px 20px',
     backgroundColor: colors.primary,
     color: '#ffffff',
-    border: 'none',
-    fontSize: '14px',
+    border: `1px solid ${colors.primary}`,
+    fontSize: '13px',
     fontWeight: '500',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s',
     ':hover': {
       backgroundColor: colors.primaryLight
+    },
+    ':disabled': {
+      opacity: 0.5,
+      cursor: 'not-allowed'
     }
   },
   infoItem: {
     display: 'flex',
-    gap: '16px',
-    padding: '12px 0',
+    gap: '12px',
+    padding: '16px 0',
     borderBottom: `1px solid ${colors.gray[200]}`,
     ':last-child': {
       borderBottom: 'none'
     }
   },
   infoIcon: {
-    width: '40px',
-    height: '40px',
+    width: '36px',
+    height: '36px',
     backgroundColor: colors.gray[100],
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     color: colors.primary,
-    flexShrink: 0
+    flexShrink: 0,
+    fontSize: '14px'
   },
   infoContent: {
     flex: 1
   },
   infoLabel: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: colors.gray[500],
     marginBottom: '4px',
-    fontWeight: '500'
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
   },
   infoValue: {
-    fontSize: '15px',
+    fontSize: '14px',
     color: colors.gray[900],
     fontWeight: '500'
   },
   securityInfo: {
     textAlign: 'center',
-    padding: '20px 0'
+    padding: '16px 0'
+  },
+  securityIcon: {
+    fontSize: '32px',
+    color: colors.gray[300],
+    marginBottom: '12px'
   },
   securityText: {
-    fontSize: '15px',
+    fontSize: '14px',
     color: colors.gray[700],
-    marginBottom: '8px'
+    marginBottom: '8px',
+    fontWeight: '500'
   },
   securityHint: {
-    fontSize: '13px',
-    color: colors.gray[500]
+    fontSize: '12px',
+    color: colors.gray['500']
   },
   viewAllButton: {
-    padding: '8px 16px',
-    backgroundColor: colors.gray[100],
+    padding: '8px 12px',
+    backgroundColor: 'transparent',
     color: colors.gray[700],
     border: `1px solid ${colors.gray[300]}`,
-    fontSize: '14px',
+    fontSize: '12px',
     fontWeight: '500',
     cursor: 'pointer',
+    transition: 'all 0.2s',
     ':hover': {
-      backgroundColor: colors.gray[200]
+      backgroundColor: colors.gray[100]
     }
   },
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '12px'
+    gap: '8px'
   },
   statCard: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: '10px',
     padding: '12px',
     backgroundColor: colors.gray[50],
     border: `1px solid ${colors.gray[200]}`
   },
   statIcon: {
-    fontSize: '20px',
+    fontSize: '18px',
     color: colors.primary
   },
-  statContent: {},
+  statContent: {
+    flex: 1
+  },
   statValue: {
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: '700',
     color: colors.gray[900],
     marginBottom: '2px'
   },
   statLabel: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: colors.gray[500],
-    fontWeight: '500'
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
   },
   emptyOrders: {
     textAlign: 'center',
-    padding: '40px 20px'
+    padding: '32px 16px'
   },
   emptyIcon: {
-    fontSize: '48px',
+    fontSize: '32px',
     color: colors.gray[300],
-    marginBottom: '16px'
+    marginBottom: '12px'
   },
   emptyText: {
-    fontSize: '15px',
-    color: colors.gray[500],
-    marginBottom: '20px'
+    fontSize: '14px',
+    color: colors.gray['500'],
+    marginBottom: '16px'
   },
   browseMenuButton: {
-    padding: '10px 20px',
+    padding: '12px 20px',
     backgroundColor: colors.primary,
     color: '#ffffff',
-    border: 'none',
-    fontSize: '14px',
+    border: `1px solid ${colors.primary}`,
+    fontSize: '13px',
     fontWeight: '500',
     cursor: 'pointer',
+    transition: 'all 0.2s',
     ':hover': {
       backgroundColor: colors.primaryLight
     }
@@ -1105,7 +1261,7 @@ const styles = {
   ordersList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px'
+    gap: '8px'
   },
   orderItem: {
     display: 'flex',
@@ -1117,7 +1273,8 @@ const styles = {
     cursor: 'pointer',
     transition: 'all 0.2s',
     ':hover': {
-      backgroundColor: colors.gray[100]
+      backgroundColor: colors.gray[100],
+      borderColor: colors.gray[300]
     }
   },
   orderInfo: {
@@ -1126,50 +1283,53 @@ const styles = {
     gap: '4px'
   },
   orderNumber: {
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '600',
     color: colors.gray[900]
   },
   orderDate: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: colors.gray[500]
   },
   orderTotal: {
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '700',
     color: colors.gray[900]
   },
-  orderStatus: {},
+  orderStatus: {
+    flexShrink: 0
+  },
   statusBadge: {
-    padding: '4px 12px',
-    fontSize: '12px',
+    padding: '4px 8px',
+    fontSize: '10px',
     fontWeight: '600',
-    borderRadius: '12px',
+    border: `1px solid`,
     textTransform: 'uppercase',
     letterSpacing: '0.5px'
   },
   accountInfo: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px'
+    gap: '12px'
   },
   accountItem: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: '8px',
+    paddingBottom: '12px',
     borderBottom: `1px solid ${colors.gray[200]}`,
     ':last-child': {
-      borderBottom: 'none'
+      borderBottom: 'none',
+      paddingBottom: 0
     }
   },
   accountLabel: {
-    fontSize: '14px',
+    fontSize: '12px',
     color: colors.gray[600],
     fontWeight: '500'
   },
   accountValue: {
-    fontSize: '14px',
+    fontSize: '12px',
     color: colors.gray[900],
     fontWeight: '500'
   }
