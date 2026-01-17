@@ -415,7 +415,7 @@ const MenuPage = () => {
 
         {/* Contenido Principal */}
         <main style={{
-          marginLeft: isMobile ? '0' : '100px',
+          marginLeft: isMobile ? '0' : '280px',
           flex: 1,
           width: '100%',
           paddingBottom: carrito.length > 0 && isMobile ? '100px' : '0'
