@@ -23,7 +23,7 @@ import {
 
 // Paleta de colores minimalista
 const colors = {
-  primary: '#000000',
+  primary: '#E74C3C',
   primaryLight: '#333333',
   secondary: '#E74C3C',
   success: '#689F38',

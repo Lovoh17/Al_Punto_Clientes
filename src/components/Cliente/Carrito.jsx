@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useCliente } from '../../Hooks/useCliente';
 
 const colors = {
-  primary: '#000000',
+  primary: '#E74C3C',
   primaryLight: '#333333',
   secondary: '#E74C3C',
   accent: '#FF6B5B',
