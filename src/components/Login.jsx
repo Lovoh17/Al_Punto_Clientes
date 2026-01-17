@@ -406,7 +406,7 @@ const Login = () => {
         <div style={styles.header}>
           <div style={styles.logoContainer}>
             <img 
-              src="/src/assets/Images/Logos/logo_Blanco.jpg"
+              src="../assets/Images/Logos/logo-remove.png"
               alt="Logo Restaurante"
               style={styles.logoImage}
               onError={(e) => {
