@@ -1581,7 +1581,7 @@ const Carrito = ({
           {!mostrarFormulario ? (
             <button
               onClick={() => {
-                if (!user || !user.uid) {
+                if (!user || !user.id) {
                   alert('⚠️ Debes iniciar sesión para realizar un pedido');
                   return;
                 }

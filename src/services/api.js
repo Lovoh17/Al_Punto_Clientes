@@ -129,20 +129,59 @@ export const clienteService = {
   getProductosDisponibles: () => 
     api.get('/productos?disponible=true'),
   
-  crearPedidoCompleto: (datosCarrito) => {
-    return api.post('/Pedidos', {
-      usuario_id: datosCarrito.usuario_id,
-      numero_mesa: datosCarrito.numero_mesa || null,
-      ubicacion: datosCarrito.ubicacion || null,
-      notas: datosCarrito.notas || '',
-      productos: datosCarrito.items.map(item => ({
-        producto_id: item.id,
-        cantidad: item.cantidad,
-        precio_unitario: item.precio,
-        notas: item.notas || ''
-      }))
-    });
-  },
+  // En src/services/api.js
+crearPedidoCompleto: (pedidoData) => {
+  console.log('🚀 Creando pedido completo:', pedidoData);
+  
+  // Validar que tenga número de pedido (OBLIGATORIO por DB)
+  if (!pedidoData.numero_pedido) {
+    // Generar uno automáticamente si no viene
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 1000);
+    pedidoData.numero_pedido = `PED-${timestamp}-${randomNum}`;
+    console.warn('⚠️ Generando número automáticamente:', pedidoData.numero_pedido);
+  }
+  
+  // Asegurar que tiene estado (OBLIGATORIO por DB)
+  if (!pedidoData.estado) {
+    pedidoData.estado = 'pendiente';
+  }
+  
+  // Asegurar que tiene total (OBLIGATORIO por DB)
+  if (!pedidoData.total && pedidoData.productos) {
+    pedidoData.total = pedidoData.productos.reduce((sum, p) => 
+      sum + ((p.precio_unitario || 0) * (p.cantidad || 0)), 0);
+  }
+  
+  // Transformar "items" a "productos" si es necesario
+  let productos = [];
+  if (pedidoData.items && Array.isArray(pedidoData.items)) {
+    productos = pedidoData.items.map(item => ({
+      producto_id: item.id,
+      cantidad: parseInt(item.cantidad) || 1,
+      precio_unitario: parseFloat(item.precio) || 0,
+      notas: item.notas || ''
+    }));
+  } else if (pedidoData.productos && Array.isArray(pedidoData.productos)) {
+    productos = pedidoData.productos;
+  }
+  
+  // Preparar datos finales
+  const datosFinales = {
+    usuario_id: pedidoData.usuario_id,
+    numero_pedido: pedidoData.numero_pedido, // ← OBLIGATORIO
+    numero_mesa: pedidoData.numero_mesa || 'Delivery',
+    ubicacion: pedidoData.ubicacion || null,
+    total: pedidoData.total || 0, // ← OBLIGATORIO
+    estado: pedidoData.estado || 'pendiente', // ← OBLIGATORIO
+    notas: pedidoData.notas || '',
+    productos: productos
+  };
+  
+  console.log('📤 Enviando a /Pedidos:', datosFinales);
+  
+  return api.post('/Pedidos', datosFinales);
+}
 };
 
 export const menuDiasService = {

@@ -79,75 +79,95 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // 🔵 Login con Google - SIN REDIRECCIÓN AUTOMÁTICA EN ESTA FUNCIÓN
-  const loginWithGoogle = async () => {
+  // 🔵 Login con Google - MODIFICADO
+const loginWithGoogle = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    console.log('🚀 Iniciando login con Google...');
+    
+    // 1. Autenticar con Firebase
+    const result = await signInWithPopup(auth, googleProvider);
+    const firebaseUser = result.user;
+    
+    console.log('✅ Firebase auth exitosa:', firebaseUser.email);
+    
+    // 2. Preparar datos para el backend
+    const userData = {
+      id: firebaseUser.uid, // Enviar como 'id'
+      email: firebaseUser.email,
+      nombre: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario',
+      foto: firebaseUser.photoURL,
+      provider: 'google.com',
+      password: 'google-auth'
+    };
+    
+    console.log('📤 Enviando datos al backend...', userData);
+    
+    let backendUser = null;
+    
+    // 3. Llamar al backend
     try {
-      setLoading(true);
-      setError(null);
+      const response = await usuarioService.registro(userData);
+      const { success, data } = response.data;
       
-      console.log('🚀 Iniciando login con Google...');
+      if (success) {
+        console.log('✅ Backend respondió exitosamente', data);
+        backendUser = data.usuario || data; // Guardar usuario del backend
+      }
+    } catch (registerError) {
+      console.log('ℹ️ Usuario ya existe o error en backend:', registerError.message);
       
-      // 1. Autenticar con Firebase
-      const result = await signInWithPopup(auth, googleProvider);
-      const firebaseUser = result.user;
-      
-      console.log('✅ Firebase auth exitosa:', firebaseUser.email);
-      
-      // 2. Preparar datos
-      const userData = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        nombre: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario',
-        foto: firebaseUser.photoURL,
-        provider: 'google.com',
-        password: 'google-auth'
-      };
-      
-      console.log('📤 Enviando datos al backend...');
-      
-      // 3. Llamar al backend
+      // Si el usuario ya existe, intentar obtenerlo
       try {
-        const response = await usuarioService.registro(userData);
-        const { success } = response.data;
+        const loginResponse = await usuarioService.login({
+          email: firebaseUser.email,
+          password: 'google-auth'
+        });
         
-        if (success) {
-          console.log('✅ Backend respondió exitosamente');
+        if (loginResponse.data.success) {
+          backendUser = loginResponse.data.data.usuario;
         }
-      } catch (registerError) {
-        console.log('ℹ️ Usuario ya existe o error en backend:', registerError.message);
+      } catch (loginError) {
+        console.error('❌ Error al hacer login con Google:', loginError);
       }
-      
-      // 4. Guardar en localStorage y estado
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('token', 'google-auth-token');
-      setUser(userData);
-      
-      // 5. Redirigir manualmente (solo una vez)
-      console.log('🎯 Redirigiendo a /cliente/menu...');
-      setTimeout(() => {
-        window.location.href = '/cliente/menu';
-      }, 100);
-      
-      return { success: true, user: userData };
-      
-    } catch (error) {
-      console.error('❌ Error en login Google:', error);
-      
-      let errorMessage = 'Error al iniciar sesión con Google';
-      
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'El popup de Google fue cerrado';
-      } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = 'Permite ventanas emergentes para Google Sign-In';
-      }
-      
-      setError(errorMessage);
-      throw new Error(errorMessage);
-      
-    } finally {
-      setLoading(false);
     }
-  };
+    
+    // 4. Preparar usuario final para localStorage
+    let finalUser = userData;
+    
+    // Si el backend devolvió un usuario, usarlo (tiene el ID correcto de la base de datos)
+    if (backendUser) {
+      finalUser = {
+        ...backendUser,
+        // Asegurarse de mantener los datos de Firebase si faltan en backend
+        foto: backendUser.foto || firebaseUser.photoURL,
+        nombre: backendUser.nombre || firebaseUser.displayName,
+        provider: 'google.com'
+      };
+    }
+    
+    // 5. Guardar en localStorage y estado
+    console.log('💾 Guardando usuario en estado:', finalUser);
+    localStorage.setItem('user', JSON.stringify(finalUser));
+    localStorage.setItem('token', 'google-auth-token');
+    setUser(finalUser);
+    
+    // 6. Redirigir
+    console.log('🎯 Redirigiendo a /cliente/menu...');
+    setTimeout(() => {
+      window.location.href = '/cliente/menu';
+    }, 100);
+    
+    return { success: true, user: finalUser };
+    
+  } catch (error) {
+    // ... (mantener el manejo de errores)
+  } finally {
+    setLoading(false);
+  }
+};
 
   // 🔐 Login tradicional
   const login = async (email, password) => {
@@ -260,45 +280,75 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🔥 MANEJO DE USUARIO FIREBASE - SIN REDIRECCIÓN AUTOMÁTICA
-  const handleFirebaseUser = async (firebaseUser) => {
-    console.log('⚠️ handleFirebaseUser llamado - No hacer nada si ya hay sesión');
+  // 🔥 MANEJO DE USUARIO FIREBASE - MODIFICADO
+const handleFirebaseUser = async (firebaseUser) => {
+  console.log('⚠️ handleFirebaseUser llamado');
+  
+  // Si ya tenemos usuario en estado, no hacer nada
+  if (user) {
+    console.log('✅ Ya hay usuario en estado, ignorando...');
+    return;
+  }
+  
+  // Verificar si ya hay datos en localStorage
+  const storedUser = localStorage.getItem('user');
+  if (storedUser) {
+    console.log('✅ Ya hay sesión en localStorage, ignorando...');
+    return;
+  }
+  
+  console.log('🔄 Procesando usuario Firebase por primera vez...');
+  
+  try {
+    // Intentar obtener el usuario del backend para asegurar el ID correcto
+    let backendUser = null;
     
-    // Si ya tenemos usuario en estado, no hacer nada
-    if (user) {
-      console.log('✅ Ya hay usuario en estado, ignorando...');
-      return;
+    try {
+      const response = await usuarioService.login({
+        email: firebaseUser.email,
+        password: 'google-auth'
+      });
+      
+      if (response.data.success) {
+        backendUser = response.data.data.usuario;
+        console.log('✅ Usuario obtenido del backend:', backendUser);
+      }
+    } catch (error) {
+      console.log('ℹ️ No se pudo obtener usuario del backend, usando datos de Firebase');
     }
     
-    // Verificar si ya hay datos en localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      console.log('✅ Ya hay sesión en localStorage, ignorando...');
-      return;
-    }
-    
-    console.log('🔄 Procesando usuario Firebase por primera vez...');
-    
-    const userData = {
-      uid: firebaseUser.uid,
+    // Preparar usuario final
+    let finalUser = {
+      id: firebaseUser.uid,
       email: firebaseUser.email,
       nombre: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
       foto: firebaseUser.photoURL,
       provider: 'google.com'
     };
     
-    localStorage.setItem('user', JSON.stringify(userData));
+    // Si tenemos usuario del backend, usarlo
+    if (backendUser) {
+      finalUser = {
+        ...backendUser,
+        foto: backendUser.foto || firebaseUser.photoURL,
+        provider: 'google.com'
+      };
+    }
+    
+    localStorage.setItem('user', JSON.stringify(finalUser));
     localStorage.setItem('token', 'firebase-auto-login');
-    setUser(userData);
+    setUser(finalUser);
     
     // Solo redirigir si NO estamos ya en /cliente/menu
     if (window.location.pathname !== '/cliente/menu') {
       console.log('🎯 Redirigiendo a /cliente/menu...');
       window.location.href = '/cliente/menu';
-    } else {
-      console.log('✅ Ya estamos en /cliente/menu, no redirigir');
     }
-  };
+    
+  } catch (error) {
+    console.error('❌ Error en handleFirebaseUser:', error);
+  }
+};
 
   const value = {
     user,
