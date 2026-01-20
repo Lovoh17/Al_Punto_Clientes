@@ -629,7 +629,7 @@ const Carrito = ({
                   }}>
                     Contra Entrega
                   </div>
-                  <div style={{ fontSize: '24px' }}>💵</div>
+                  <div style={{ fontSize: '24px' }}></div>
                 </div>
                 <div style={{ 
                   fontSize: '13px',
@@ -642,81 +642,7 @@ const Carrito = ({
             </div>
           </div>
 
-          {/* Tarjeta (sólo vista, no API real) */}
-          <div
-            onClick={() => setMetodoPago('tarjeta')}
-            style={{
-              padding: '16px',
-              border: `2px solid ${metodoPago === 'tarjeta' ? colors.primary : colors.gray[300]}`,
-              background: metodoPago === 'tarjeta' ? colors.primary + '10' : colors.gray[50],
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              if (metodoPago !== 'tarjeta') {
-                e.currentTarget.style.borderColor = colors.gray[400];
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (metodoPago !== 'tarjeta') {
-                e.currentTarget.style.borderColor = colors.gray[300];
-              }
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '20px',
-                height: '20px',
-                borderRadius: '50%',
-                border: `2px solid ${metodoPago === 'tarjeta' ? colors.primary : colors.gray[400]}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                {metodoPago === 'tarjeta' && (
-                  <div style={{
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '50%',
-                    background: colors.primary
-                  }}></div>
-                )}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '4px'
-                }}>
-                  <div style={{ 
-                    fontWeight: '700', 
-                    color: colors.gray[900],
-                    fontSize: '15px'
-                  }}>
-                    Tarjeta de Crédito/Débito
-                  </div>
-                  <div style={{ fontSize: '24px' }}>💳</div>
-                </div>
-                <div style={{ 
-                  fontSize: '13px',
-                  color: colors.gray[600],
-                  lineHeight: '1.4'
-                }}>
-                  Pago en línea seguro con VISA, MasterCard, American Express
-                </div>
-                <div style={{ 
-                  fontSize: '11px',
-                  color: colors.warning,
-                  marginTop: '4px',
-                  fontStyle: 'italic'
-                }}>
-                  ⚠️ Vista previa - El pago real se implementará posteriormente
-                </div>
-              </div>
-            </div>
-          </div>
+          
         </div>
       </div>
     );
@@ -867,7 +793,7 @@ const Carrito = ({
               border: `1px solid ${metodoPago === 'tarjeta' ? colors.primary + '30' : colors.secondary + '30'}`
             }}>
               <div style={{ fontSize: '20px' }}>
-                {metodoPago === 'tarjeta' ? '💳' : '💵'}
+                {metodoPago === 'tarjeta' ? '💳' : ''}
               </div>
               <div>
                 <div style={{ 
@@ -1173,7 +1099,7 @@ const Carrito = ({
                     justifyContent: 'center',
                     flexShrink: 0
                   }}>
-                    <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>💵</span>
+                    <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}></span>
                   </div>
                   <div>
                     <div style={{ 

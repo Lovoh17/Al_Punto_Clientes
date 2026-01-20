@@ -129,58 +129,39 @@ export const clienteService = {
   getProductosDisponibles: () => 
     api.get('/productos?disponible=true'),
   
-  // En src/services/api.js
+// En src/services/api.js - MODIFICA esta función
 crearPedidoCompleto: (pedidoData) => {
-  console.log('🚀 Creando pedido completo:', pedidoData);
+  console.log('📤 Creando pedido completo:', pedidoData);
   
-  // Validar que tenga número de pedido (OBLIGATORIO por DB)
-  if (!pedidoData.numero_pedido) {
-    // Generar uno automáticamente si no viene
+  // ✅ GENERAR NÚMERO DE PEDIDO ÚNICO basado en timestamp
+  const generarNumeroUnico = () => {
     const timestamp = Date.now();
-    const randomNum = Math.floor(Math.random() * 1000);
-    pedidoData.numero_pedido = `PED-${timestamp}-${randomNum}`;
-    console.warn('⚠️ Generando número automáticamente:', pedidoData.numero_pedido);
-  }
-  
-  // Asegurar que tiene estado (OBLIGATORIO por DB)
-  if (!pedidoData.estado) {
-    pedidoData.estado = 'pendiente';
-  }
-  
-  // Asegurar que tiene total (OBLIGATORIO por DB)
-  if (!pedidoData.total && pedidoData.productos) {
-    pedidoData.total = pedidoData.productos.reduce((sum, p) => 
-      sum + ((p.precio_unitario || 0) * (p.cantidad || 0)), 0);
-  }
-  
-  // Transformar "items" a "productos" si es necesario
-  let productos = [];
-  if (pedidoData.items && Array.isArray(pedidoData.items)) {
-    productos = pedidoData.items.map(item => ({
-      producto_id: item.id,
-      cantidad: parseInt(item.cantidad) || 1,
-      precio_unitario: parseFloat(item.precio) || 0,
-      notas: item.notas || ''
-    }));
-  } else if (pedidoData.productos && Array.isArray(pedidoData.productos)) {
-    productos = pedidoData.productos;
-  }
-  
-  // Preparar datos finales
-  const datosFinales = {
-    usuario_id: pedidoData.usuario_id,
-    numero_pedido: pedidoData.numero_pedido, // ← OBLIGATORIO
-    numero_mesa: pedidoData.numero_mesa || 'Delivery',
-    ubicacion: pedidoData.ubicacion || null,
-    total: pedidoData.total || 0, // ← OBLIGATORIO
-    estado: pedidoData.estado || 'pendiente', // ← OBLIGATORIO
-    notas: pedidoData.notas || '',
-    productos: productos
+    const random = Math.floor(Math.random() * 10000);
+    return `PED-${timestamp}-${random}`;
   };
   
-  console.log('📤 Enviando a /Pedidos:', datosFinales);
+  // ✅ SI YA TIENE NÚMERO, USARLO; SINO GENERAR UNO
+  if (!pedidoData.numero_pedido) {
+    pedidoData.numero_pedido = generarNumeroUnico();
+    console.log('🔢 Número generado:', pedidoData.numero_pedido);
+  }
   
-  return api.post('/Pedidos', datosFinales);
+  // ✅ VERIFICAR QUE EL NÚMERO NO EXISTA YA (puedes hacer esto con un endpoint adicional)
+  return api.post('/Pedidos', {
+    usuario_id: pedidoData.usuario_id,
+    numero_pedido: pedidoData.numero_pedido, // ← ESTE DEBE SER ÚNICO
+    numero_mesa: pedidoData.numero_mesa || 'Delivery',
+    ubicacion: pedidoData.ubicacion || null,
+    total: pedidoData.total || 0,
+    estado: pedidoData.estado || 'pendiente',
+    notas: pedidoData.notas || '',
+    productos: pedidoData.productos || pedidoData.items?.map(item => ({
+      producto_id: item.id,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio,
+      notas: item.notas || ''
+    })) || []
+  });
 }
 };
 

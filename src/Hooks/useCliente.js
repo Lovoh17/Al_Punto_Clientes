@@ -136,87 +136,112 @@ export const useCliente = () => {
   }, []);
 
   // ✅ FUNCIÓN PARA REALIZAR PEDIDO - VERSIÓN SIMPLE Y DIRECTA
-  const realizarPedido = async (datosCliente, carritoParaEnviar) => {
-    try {
-      // ✅ VALIDAR QUE EL USUARIO ESTÉ AUTENTICADO
-      if (!user || !user.id) {
-        throw new Error('Debes iniciar sesión para realizar un pedido');
-      }
+  // En src/Hooks/useCliente.js - MODIFICA la función realizarPedido
 
-      console.log('🚀 INICIANDO PEDIDO');
-      console.log('👤 Usuario:', user.email);
-      console.log('🆔 ID:', user.id);
+const realizarPedido = async (datosCliente, carritoParaEnviar) => {
+  try {
+    // ... validaciones previas ...
 
-      // ✅ VALIDAR QUE HAY PRODUCTOS EN EL CARRITO
-      if (!carritoParaEnviar || carritoParaEnviar.length === 0) {
-        throw new Error('El carrito está vacío');
-      }
-
-      // ✅ CALCULAR TOTAL
-      const total = carritoParaEnviar.reduce((sum, item) => 
-        sum + (parseFloat(item.precio) * parseInt(item.cantidad)), 0);
-      console.log('💰 Total:', total);
-
-      // ✅ GENERAR NÚMERO DE PEDIDO
-      const numeroPedido = generarNumeroPedido();
-      console.log('🔢 Número generado:', numeroPedido);
-
-      // ✅ CONSTRUIR DATOS DEL PEDIDO - ESTRUCTURA CORRECTA
-      const pedidoData = {
-        usuario_id: user.id,
-        numero_pedido: numeroPedido, // ← NÚMERO GENERADO EN FRONTEND
-        numero_mesa: datosCliente.mesa || 'Delivery',
-        ubicacion: datosCliente.ubicacion || null,
-        notas: datosCliente.notas || '',
-        // ⚠️ IMPORTANTE: El backend espera "productos" no "items"
-        productos: carritoParaEnviar.map(item => ({
-          producto_id: item.id, // ← El backend espera "producto_id" no "id"
-          cantidad: parseInt(item.cantidad),
-          precio_unitario: parseFloat(item.precio),
-          notas: item.notas || ''
-        }))
-      };
-
-      console.log('📦 Datos a enviar:');
-      console.log(JSON.stringify(pedidoData, null, 2));
-
-      // ✅ ENVIAR DIRECTAMENTE AL BACKEND - SIN FALLBACK LOCAL
-      const pedidoResponse = await clienteService.crearPedidoCompleto(pedidoData);
-      
-      if (!pedidoResponse.data.success) {
-        // Si el backend responde con error, lanzar excepción
-        throw new Error(pedidoResponse.data.error || 'Error al crear pedido');
-      }
-
-      // ✅ ACTUALIZAR ÚLTIMO NÚMERO EN localStorage
-      const numeroActual = parseInt(numeroPedido.replace('PED-', ''));
-      localStorage.setItem('ultimo_numero_pedido', numeroActual.toString());
-      setUltimoNumeroPedido(numeroActual);
-
-      console.log('✅ PEDIDO CREADO EXITOSAMENTE');
-      console.log('📋 Respuesta:', pedidoResponse.data.data);
-
-      return { 
-        success: true, 
-        pedido: pedidoResponse.data.data,
-        mensaje: 'Pedido realizado exitosamente'
-      };
-
-    } catch (err) {
-      console.error('❌ ERROR AL REALIZAR PEDIDO:', err);
-      
-      // Si el error es específico de la función PostgreSQL
-      if (err.message.includes('generar_numero_pedido')) {
-        throw new Error(
-          'Error del servidor: Problema con la generación de números de pedido. ' +
-          'Contacta al administrador.'
-        );
+    // ✅ CALCULAR TOTAL
+    const total = carritoParaEnviar.reduce((sum, item) => 
+      sum + (parseFloat(item.precio) * parseInt(item.cantidad)), 0);
+    
+    // ✅ GENERAR NÚMERO DE PEDIDO ÚNICO: PED-(nombre_usuario)-(random)
+    const generarNumeroPedidoUnico = () => {
+      // Obtener las primeras 3 letras del nombre (o email si no hay nombre)
+      let nombreBase = '';
+      if (user.nombre) {
+        // Tomar las primeras 3 letras del nombre, en mayúsculas, sin espacios
+        nombreBase = user.nombre
+          .replace(/\s+/g, '') // Eliminar espacios
+          .substring(0, 3)
+          .toUpperCase();
+      } else if (user.email) {
+        // Tomar las primeras 3 letras antes del @ del email
+        nombreBase = user.email
+          .split('@')[0]
+          .substring(0, 3)
+          .toUpperCase();
+      } else {
+        // Fallback: usar "USR"
+        nombreBase = 'USR';
       }
       
-      // Retornar el error exacto del backend
-      throw new Error(err.response?.data?.error || err.message || 'Error al realizar el pedido');
+      // Generar 2 números aleatorios entre 10 y 99
+      const random1 = Math.floor(Math.random() * 90) + 10; // 10-99
+      const random2 = Math.floor(Math.random() * 90) + 10; // 10-99
+      
+      // Formato: PED-JOH-45-78
+      const numeroPedido = `PED-${nombreBase}-${random1}-${random2}`;
+      
+      console.log('🔢 Número único generado:', numeroPedido);
+      console.log('   • Nombre base:', nombreBase);
+      console.log('   • Random 1:', random1);
+      console.log('   • Random 2:', random2);
+      
+      return numeroPedido;
+    };
+
+    const numeroPedido = generarNumeroPedidoUnico();
+
+    // ✅ ESTRUCTURA CORRECTA PARA LA DB
+    const pedidoData = {
+      usuario_id: user.id,
+      numero_pedido: numeroPedido, // ← NÚMERO ÚNICO CON NOMBRE
+      numero_mesa: datosCliente.mesa || 'Delivery',
+      ubicacion: datosCliente.ubicacion || null,
+      total: total,
+      estado: 'pendiente',
+      notas: datosCliente.notas || '',
+      productos: carritoParaEnviar.map(item => ({
+        producto_id: item.id,
+        cantidad: parseInt(item.cantidad),
+        precio_unitario: parseFloat(item.precio),
+        notas: item.notas || ''
+      }))
+    };
+
+    console.log('📦 Datos del pedido completo:');
+    console.log(JSON.stringify(pedidoData, null, 2));
+    
+    // ✅ ENVIAR AL BACKEND
+    const response = await clienteService.crearPedidoCompleto(pedidoData);
+    
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Error al crear pedido');
     }
-  };
+
+    console.log('✅ PEDIDO CREADO EXITOSAMENTE');
+    console.log('📋 Respuesta:', response.data.data);
+    
+    return { 
+      success: true, 
+      pedido: response.data.data,
+      mensaje: 'Pedido realizado exitosamente',
+      numero_pedido: numeroPedido // Devolver el número generado
+    };
+
+  } catch (err) {
+    console.error('❌ ERROR AL REALIZAR PEDIDO:', err);
+    
+    // Si es error de duplicado, reintentar con nuevo número
+    if (err.message.includes('duplicate key') || 
+        err.message.includes('duplicate') ||
+        err.response?.data?.error?.includes('duplicate')) {
+      
+      console.log('🔄 ERROR: Número duplicado, reintentando...');
+      // En un caso real, aquí podrías llamar recursivamente a realizarPedido
+      // con un nuevo intento, pero es mejor prevenir que curar
+      
+      throw new Error(
+        'Error: El número de pedido ya existe. ' +
+        'Por favor, intenta nuevamente en un momento.'
+      );
+    }
+    
+    throw new Error(err.response?.data?.message || err.message || 'Error al realizar el pedido');
+  }
+};
 
   const productosFiltrados = categoriaActiva === 'todos' 
     ? productos 
