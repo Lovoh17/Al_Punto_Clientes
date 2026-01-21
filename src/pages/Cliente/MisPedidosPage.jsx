@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { pedidoService } from '../../services/api';
+import { pedidoService, pedidosProductosService, productoService } from '../../services/api';
 import { useAuth } from '../../AuthContext';
 
 const colors = {
@@ -40,7 +40,13 @@ const MisPedidosPage = () => {
   const [error, setError] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null);
+  const [productosPedido, setProductosPedido] = useState([]);
+  const [productosDetallados, setProductosDetallados] = useState([]);
+  const [cargandoProductos, setCargandoProductos] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Cache de productos para evitar múltiples llamadas
+  const [productosCache, setProductosCache] = useState({});
 
   useEffect(() => {
     const handleResize = () => {
@@ -77,7 +83,15 @@ const MisPedidosPage = () => {
       const pedidosData = response.data?.data || response.data || [];
       console.log('Datos de pedidos:', pedidosData);
       
-      setPedidos(Array.isArray(pedidosData) ? pedidosData : []);
+      // Ordenar pedidos por fecha (más reciente primero)
+      const pedidosOrdenados = (Array.isArray(pedidosData) ? pedidosData : [])
+        .sort((a, b) => {
+          const fechaA = new Date(a.fecha_creacion || a.fecha_pedido || a.createdAt);
+          const fechaB = new Date(b.fecha_creacion || b.fecha_pedido || b.createdAt);
+          return fechaB - fechaA;
+        });
+      
+      setPedidos(pedidosOrdenados);
       
     } catch (err) {
       console.error('Error cargando pedidos:', err);
@@ -85,6 +99,136 @@ const MisPedidosPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const cargarProductosPedido = async (pedidoId) => {
+    try {
+      setCargandoProductos(true);
+      console.log('Cargando productos para pedido ID:', pedidoId);
+      
+      // 1. Obtener productos del pedido
+      const response = await pedidosProductosService.obtenerProductosPedido(pedidoId);
+      
+      console.log('Respuesta productos del pedido:', response);
+      
+      let productos = [];
+      if (response.data?.success) {
+        productos = response.data.data || response.data;
+      } else {
+        productos = response.data || [];
+      }
+      
+      setProductosPedido(Array.isArray(productos) ? productos : [productos]);
+      
+      // 2. Obtener información detallada de cada producto
+      if (productos.length > 0) {
+        await cargarDetallesProductos(productos);
+      }
+      
+    } catch (err) {
+      console.error('Error cargando productos del pedido:', err);
+      setProductosPedido([]);
+      setProductosDetallados([]);
+    } finally {
+      setCargandoProductos(false);
+    }
+  };
+
+  const cargarDetallesProductos = async (productosPedido) => {
+    try {
+      const productosConDetalle = [];
+      const productosPorCargar = [];
+
+      // Filtrar productos que no tenemos en cache
+      for (const productoPedido of productosPedido) {
+        const productoId = productoPedido.producto_id || productoPedido.id;
+        
+        if (productosCache[productoId]) {
+          // Usar producto del cache
+          productosConDetalle.push({
+            ...productoPedido,
+            producto_detalle: productosCache[productoId]
+          });
+        } else if (productoId) {
+          // Agregar a la lista para cargar
+          productosPorCargar.push(productoId);
+        } else {
+          // Si no tiene ID, usar datos básicos
+          productosConDetalle.push({
+            ...productoPedido,
+            producto_detalle: {
+              nombre: productoPedido.nombre || 'Producto sin nombre',
+              categoria_id: productoPedido.categoria_id || null,
+              imagen: productoPedido.imagen || null
+            }
+          });
+        }
+      }
+
+      // Cargar productos que no están en cache
+      if (productosPorCargar.length > 0) {
+        console.log('Cargando detalles de productos:', productosPorCargar);
+        
+        // Para cada producto, obtener su información detallada
+        const promesasProductos = productosPorCargar.map(async (productoId) => {
+          try {
+            const response = await productoService.getById(productoId);
+            if (response.data?.success) {
+              return {
+                id: productoId,
+                data: response.data.data || response.data
+              };
+            }
+          } catch (err) {
+            console.error(`Error cargando producto ${productoId}:`, err);
+            return {
+              id: productoId,
+              data: null
+            };
+          }
+        });
+
+        const resultados = await Promise.all(promesasProductos);
+        
+        // Actualizar cache
+        const nuevoCache = { ...productosCache };
+        resultados.forEach(resultado => {
+          if (resultado.data) {
+            nuevoCache[resultado.id] = resultado.data;
+          }
+        });
+        setProductosCache(nuevoCache);
+        
+        // Combinar productos con sus detalles
+        productosPedido.forEach(productoPedido => {
+          const productoId = productoPedido.producto_id || productoPedido.id;
+          const detalle = nuevoCache[productoId] || null;
+          
+          if (!productosConDetalle.find(p => 
+            (p.producto_id || p.id) === productoId)) {
+            productosConDetalle.push({
+              ...productoPedido,
+              producto_detalle: detalle
+            });
+          }
+        });
+      }
+
+      setProductosDetallados(productosConDetalle);
+      
+    } catch (err) {
+      console.error('Error cargando detalles de productos:', err);
+      // Si falla, usar los datos básicos del pedido
+      setProductosDetallados(productosPedido.map(p => ({
+        ...p,
+        producto_detalle: null
+      })));
+    }
+  };
+
+  const handleVerDetalle = async (pedido) => {
+    setPedidoSeleccionado(pedido);
+    await cargarProductosPedido(pedido.id);
   };
 
   const handleCancelarPedido = async (pedidoId) => {
@@ -137,6 +281,62 @@ const MisPedidosPage = () => {
       cancelado: '❌'
     };
     return iconos[estado] || '📋';
+  };
+
+  // Obtener información del producto (usando cache o datos básicos)
+  const obtenerInfoProducto = (producto) => {
+    const productoId = producto.producto_id || producto.id;
+    
+    if (producto.producto_detalle) {
+      return producto.producto_detalle;
+    }
+    
+    if (productosCache[productoId]) {
+      return productosCache[productoId];
+    }
+    
+    // Datos básicos del pedido
+    return {
+      nombre: producto.nombre || `Producto ${productoId}`,
+      descripcion: producto.descripcion || '',
+      categoria_id: producto.categoria_id || null,
+      imagen: producto.imagen || null,
+      precio: producto.precio_unitario || producto.precio || 0
+    };
+  };
+
+  // Calcular subtotal de productos
+  const calcularSubtotalProductos = () => {
+    return productosDetallados.reduce((total, producto) => {
+      const cantidad = parseFloat(producto.cantidad) || 1;
+      const precio = parseFloat(producto.precio_unitario || producto.precio || 0);
+      return total + (cantidad * precio);
+    }, 0);
+  };
+
+  // Renderizar imagen del producto
+  const renderizarImagenProducto = (producto) => {
+    const infoProducto = obtenerInfoProducto(producto);
+    
+    if (infoProducto.imagen) {
+      return (
+        <img 
+          src={infoProducto.imagen} 
+          alt={infoProducto.nombre}
+          style={styles.productoImagen}
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextElementSibling.style.display = 'flex';
+          }}
+        />
+      );
+    }
+    
+    return (
+      <div style={styles.productoImagenPlaceholder}>
+        <span style={styles.productoImagenIcon}></span>
+      </div>
+    );
   };
 
   // Si no hay usuario, mostrar mensaje
@@ -376,7 +576,7 @@ const MisPedidosPage = () => {
                   flexDirection: isMobile ? 'column' : 'row'
                 }}>
                   <button
-                    onClick={() => setPedidoSeleccionado(pedido)}
+                    onClick={() => handleVerDetalle(pedido)}
                     style={{
                       ...styles.btnVer,
                       width: isMobile ? '100%' : 'auto',
@@ -403,12 +603,12 @@ const MisPedidosPage = () => {
         </div>
       )}
 
-      {/* Modal de detalle */}
+      {/* Modal de detalle con productos */}
       {pedidoSeleccionado && (
         <div style={styles.modalOverlay} onClick={() => setPedidoSeleccionado(null)}>
           <div style={{
             ...styles.modal,
-            width: isMobile ? 'calc(100% - 32px)' : '600px',
+            width: isMobile ? 'calc(100% - 32px)' : '800px',
             margin: isMobile ? '16px' : '0',
             maxHeight: isMobile ? 'calc(100vh - 64px)' : '90vh'
           }} onClick={(e) => e.stopPropagation()}>
@@ -425,6 +625,7 @@ const MisPedidosPage = () => {
             </div>
 
             <div style={styles.modalBody}>
+              {/* Estado */}
               <div style={styles.modalSection}>
                 <h4 style={styles.modalSectionTitle}>Estado</h4>
                 <div style={{
@@ -441,8 +642,9 @@ const MisPedidosPage = () => {
                 </div>
               </div>
 
+              {/* Información del pedido */}
               <div style={styles.modalSection}>
-                <h4 style={styles.modalSectionTitle}>Información</h4>
+                <h4 style={styles.modalSectionTitle}>Información del Pedido</h4>
                 <div style={styles.modalInfo}>
                   <div style={styles.modalInfoRow}>
                     <span style={styles.modalInfoLabel}>Fecha:</span>
@@ -471,10 +673,122 @@ const MisPedidosPage = () => {
                 </div>
               </div>
 
+              {/* Productos del pedido */}
               <div style={styles.modalSection}>
-                <h4 style={styles.modalSectionTitle}>Total</h4>
-                <div style={styles.modalTotal}>
-                  ${parseFloat(pedidoSeleccionado.total || 0).toFixed(2)}
+                <h4 style={styles.modalSectionTitle}>
+                  Productos del Pedido
+                  {productosDetallados.length > 0 && (
+                    <span style={styles.productosCount}>
+                      ({productosDetallados.length} producto{productosDetallados.length !== 1 ? 's' : ''})
+                    </span>
+                  )}
+                </h4>
+                
+                {cargandoProductos ? (
+                  <div style={styles.cargandoProductos}>
+                    <div style={styles.spinnerSmall} />
+                    <span>Cargando productos...</span>
+                  </div>
+                ) : productosDetallados.length > 0 ? (
+                  <div style={styles.productosContainer}>
+                    {productosDetallados.map((producto, index) => {
+                      const infoProducto = obtenerInfoProducto(producto);
+                      const subtotal = (producto.cantidad || 1) * parseFloat(producto.precio_unitario || producto.precio || 0);
+                      
+                      return (
+                        <div key={index} style={styles.productoItem}>
+                          {/* Imagen del producto */}
+                          <div style={styles.productoImagenContainer}>
+                            {renderizarImagenProducto(producto)}
+                          </div>
+                          
+                          {/* Información del producto */}
+                          <div style={styles.productoInfo}>
+                            <div style={styles.productoNombre}>
+                              {infoProducto.nombre || `Producto ${producto.producto_id || producto.id}`}
+                            </div>
+                            {producto.notas && (
+                              <div style={styles.productoNotas}>
+                                <small>
+                                  <strong>Notas:</strong> {producto.notas}
+                                </small>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Detalles del pedido */}
+                          <div style={styles.productoDetalles}>
+                            <div style={styles.productoDetalleRow}>
+                              <span style={styles.productoDetalleLabel}>Cantidad:</span>
+                              <span style={styles.productoDetalleValue}>
+                                x{producto.cantidad || 1}
+                              </span>
+                            </div>
+                            <div style={styles.productoDetalleRow}>
+                              <span style={styles.productoDetalleLabel}>Precio unitario:</span>
+                              <span style={styles.productoDetalleValue}>
+                                ${parseFloat(producto.precio_unitario || producto.precio || 0).toFixed(2)}
+                              </span>
+                            </div>
+                            <div style={styles.productoDetalleRow}>
+                              <span style={styles.productoDetalleLabel}>Subtotal:</span>
+                              <span style={styles.productoDetalleValueTotal}>
+                                ${subtotal.toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {/* Total de productos */}
+                    <div style={styles.productosTotal}>
+                      <div style={styles.productosTotalLabel}>Subtotal productos:</div>
+                      <div style={styles.productosTotalValue}>
+                        ${calcularSubtotalProductos().toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={styles.sinProductos}>
+                    <p>No se encontraron productos para este pedido</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Totales */}
+              <div style={styles.modalSection}>
+                <h4 style={styles.modalSectionTitle}>Totales</h4>
+                <div style={styles.totalesContainer}>
+                  <div style={styles.totalRow}>
+                    <span style={styles.totalLabel}>Subtotal productos:</span>
+                    <span style={styles.totalValue}>
+                      ${calcularSubtotalProductos().toFixed(2)}
+                    </span>
+                  </div>
+                  {/* Otros cargos (si los hay) */}
+                  {pedidoSeleccionado.costo_envio && parseFloat(pedidoSeleccionado.costo_envio) > 0 && (
+                    <div style={styles.totalRow}>
+                      <span style={styles.totalLabel}>Costo de envío:</span>
+                      <span style={styles.totalValue}>
+                        ${parseFloat(pedidoSeleccionado.costo_envio).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {pedidoSeleccionado.impuestos && parseFloat(pedidoSeleccionado.impuestos) > 0 && (
+                    <div style={styles.totalRow}>
+                      <span style={styles.totalLabel}>Impuestos:</span>
+                      <span style={styles.totalValue}>
+                        ${parseFloat(pedidoSeleccionado.impuestos).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  <div style={styles.totalFinalRow}>
+                    <span style={styles.totalFinalLabel}>Total del pedido:</span>
+                    <span style={styles.totalFinalValue}>
+                      ${parseFloat(pedidoSeleccionado.total || 0).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -827,7 +1141,7 @@ const styles = {
   modal: {
     background: colors.cardBg,
     border: `1px solid ${colors.border}`,
-    maxWidth: '600px',
+    maxWidth: '700px',
     width: '100%',
     maxHeight: '90vh',
     overflowY: 'auto'
@@ -859,20 +1173,27 @@ const styles = {
     padding: '20px'
   },
   modalSection: {
-    marginBottom: '20px'
+    marginBottom: '24px'
   },
   modalSectionTitle: {
-    fontSize: '14px',
+    fontSize: '16px',
     fontWeight: '700',
     color: colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    marginBottom: '12px'
+    marginBottom: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  productosCount: {
+    fontSize: '14px',
+    color: colors.text.light,
+    fontWeight: '400'
   },
   modalInfo: {
     background: colors.gray[50],
     border: `1px solid ${colors.border}`,
-    padding: '16px'
+    padding: '16px',
+    borderRadius: '4px'
   },
   modalInfoRow: {
     display: 'flex',
@@ -892,14 +1213,138 @@ const styles = {
     fontWeight: '600',
     textAlign: 'right'
   },
-  modalTotal: {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: colors.primary,
-    textAlign: 'center',
-    padding: '16px',
+  cargandoProductos: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '32px',
     background: colors.gray[50],
-    border: `1px solid ${colors.border}`
+    border: `1px solid ${colors.border}`,
+    borderRadius: '4px'
+  },
+  spinnerSmall: {
+    width: '24px',
+    height: '24px',
+    border: `2px solid ${colors.border}`,
+    borderTopColor: colors.primary,
+    animation: 'spin 0.8s linear infinite',
+    marginBottom: '12px'
+  },
+  productosContainer: {
+    background: colors.gray[50],
+    border: `1px solid ${colors.border}`,
+    borderRadius: '4px',
+    overflow: 'hidden'
+  },
+  productoItem: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '12px 16px',
+    borderBottom: `1px solid ${colors.border}`,
+    background: colors.background
+  },
+  productoInfo: {
+    flex: 1
+  },
+  productoNombre: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: '4px'
+  },
+  productoNotas: {
+    fontSize: '12px',
+    color: colors.text.light,
+    fontStyle: 'italic'
+  },
+  productoCantidad: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: colors.text.secondary,
+    padding: '0 16px',
+    minWidth: '40px',
+    textAlign: 'center'
+  },
+  productoPrecio: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: colors.text.secondary,
+    padding: '0 16px',
+    minWidth: '80px',
+    textAlign: 'right'
+  },
+  productoSubtotal: {
+    fontSize: '14px',
+    fontWeight: '700',
+    color: colors.text.primary,
+    padding: '0 16px',
+    minWidth: '80px',
+    textAlign: 'right'
+  },
+  productosTotal: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '16px',
+    background: colors.gray[100],
+    borderTop: `2px solid ${colors.border}`
+  },
+  productosTotalLabel: {
+    fontSize: '14px',
+    fontWeight: '700',
+    color: colors.text.secondary
+  },
+  productosTotalValue: {
+    fontSize: '16px',
+    fontWeight: '700',
+    color: colors.text.primary
+  },
+  sinProductos: {
+    textAlign: 'center',
+    padding: '32px',
+    background: colors.gray[50],
+    border: `1px solid ${colors.border}`,
+    borderRadius: '4px'
+  },
+  totalesContainer: {
+    background: colors.gray[50],
+    border: `1px solid ${colors.border}`,
+    padding: '16px',
+    borderRadius: '4px'
+  },
+  totalRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginBottom: '8px',
+    paddingBottom: '8px',
+    borderBottom: `1px solid ${colors.border}`
+  },
+  totalLabel: {
+    fontSize: '14px',
+    color: colors.text.light,
+    fontWeight: '600'
+  },
+  totalValue: {
+    fontSize: '14px',
+    color: colors.text.primary,
+    fontWeight: '600'
+  },
+  totalFinalRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginTop: '12px',
+    paddingTop: '12px',
+    borderTop: `2px solid ${colors.border}`
+  },
+  totalFinalLabel: {
+    fontSize: '16px',
+    color: colors.text.primary,
+    fontWeight: '700'
+  },
+  totalFinalValue: {
+    fontSize: '18px',
+    color: colors.primary,
+    fontWeight: '700'
   },
   modalFooter: {
     padding: '16px 20px',
